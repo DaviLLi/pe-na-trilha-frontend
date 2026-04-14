@@ -1,3 +1,4 @@
+// Componente menor só para desenhar o ícone da lixeira.
 function TrashIcon() {
   return (
     <svg viewBox='0 0 24 24' aria-hidden='true'>
@@ -13,10 +14,15 @@ function TrashIcon() {
   );
 }
 
+// Componente responsável por mostrar um card de trilha publicada.
+// Props:
+// - post: objeto com os dados do post
+// - onDelete: evento para apagar o post
 function PostTrilha({ post, onDelete }) {
   return (
     <article className='post'>
       <header className='postHeader'>
+        {/* Bloco com avatar e informações do autor */}
         <div className='profileGroup'>
           <div className='avatarWithBorderPost'>
             <img
@@ -33,6 +39,7 @@ function PostTrilha({ post, onDelete }) {
         </div>
 
         <div className='actionButtons'>
+          {/* Botão/evento para apagar o post */}
           <button
             className='deleteBtn'
             type='button'
@@ -45,6 +52,7 @@ function PostTrilha({ post, onDelete }) {
         </div>
       </header>
 
+      {/* Conteúdo principal do post */}
       <h3 className='postTitle'>{post.titulo}</h3>
       <p className='postText'>{post.descricao}</p>
       <span className='postAddress'>{post.endereco}</span>

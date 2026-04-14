@@ -1,9 +1,18 @@
+/*
+  Este arquivo veio da estrutura inicial do Vite.
+  Hoje ele não está sendo usado no projeto, porque os estilos principais
+  foram separados dentro da pasta src/styles.
+
+  Estou mantendo só como referência de estudo.
+*/
+
 body {
   font-family: Arial, Helvetica, sans-serif;
   background-color: #f4f4f4;
 }
 
 .container {
+  /* Exemplo de card centralizado */
   max-width: 500px;
   margin: 50px auto;
   padding: 20px;
@@ -13,10 +22,12 @@ body {
 }
 
 h1 {
+  /* Centraliza títulos genéricos */
   text-align: center;
 }
 
 input {
+  /* Estilo base antigo para inputs */
   width: 100%;
   padding: 10px;
   margin-top: 10px;
@@ -25,6 +36,7 @@ input {
 }
 
 button {
+  /* Estilo base antigo para botões */
   width: 100%;
   padding: 10px;
   margin-top: 15px;
@@ -36,5 +48,6 @@ button {
 }
 
 button:hover {
+  /* Efeito de hover antigo */
   background-color: #1b5e20;
 }

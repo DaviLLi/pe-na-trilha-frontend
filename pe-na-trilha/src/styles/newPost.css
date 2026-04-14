@@ -1,4 +1,5 @@
 .modalOverlay {
+  /* Fundo escuro atrás do modal */
   position: fixed;
   inset: 0;
   background:
@@ -10,6 +11,7 @@
 }
 
 .modal {
+  /* Caixa principal do modal */
   position: fixed;
   top: 50%;
   left: 50%;
@@ -33,6 +35,7 @@
 }
 
 @keyframes overlayFade {
+  /* Animação de entrada do overlay */
   from {
     opacity: 0;
   }
@@ -42,6 +45,7 @@
 }
 
 @keyframes modalReveal {
+  /* Animação de entrada do modal */
   from {
     opacity: 0;
     transform: translate(-50%, -46%) scale(0.96);
@@ -53,10 +57,12 @@
 }
 
 .modalHeader {
+  /* Cabeçalho com título e texto de apoio */
   text-align: center;
 }
 
 .modalEyebrow {
+  /* Etiqueta visual opcional acima do título */
   display: inline-block;
   margin-bottom: 0.75rem;
   padding: 0.35rem 0.8rem;
@@ -70,6 +76,7 @@
 }
 
 .modalHeader h2 {
+  /* Título principal do modal */
   margin: 0;
   font-size: clamp(1.85rem, 3vw, 2.2rem);
   font-weight: 700;
@@ -77,6 +84,7 @@
 }
 
 .modalHeader p {
+  /* Texto explicativo abaixo do título */
   margin: 0.75rem auto 0;
   max-width: 28rem;
   color: var(--color-gray-2);
@@ -86,18 +94,21 @@
 }
 
 #postForm {
+  /* Estrutura vertical do formulário */
   display: flex;
   flex-direction: column;
   gap: 1.2rem;
 }
 
 .formField {
+  /* Bloco individual de cada campo */
   display: flex;
   flex-direction: column;
   gap: 0.55rem;
 }
 
 .formField label {
+  /* Rótulo do campo */
   color: var(--color-white-1);
   font-family: var(--font-body);
   font-size: 1rem;
@@ -106,6 +117,7 @@
 
 .formField input,
 .formField textarea {
+  /* Estilo base dos campos */
   width: 100%;
   box-sizing: border-box;
   padding: 1rem 1.1rem;
@@ -126,11 +138,13 @@
 
 .formField input::placeholder,
 .formField textarea::placeholder {
+  /* Cor do texto de exemplo dentro do campo */
   color: rgba(173, 173, 179, 0.65);
 }
 
 .formField input:focus,
 .formField textarea:focus {
+  /* Destaque visual quando o usuário está digitando */
   border-color: var(--color-green-1);
   background: rgba(58, 60, 68, 1);
   box-shadow: 0 0 0 4px rgba(0, 179, 126, 0.12);
@@ -138,17 +152,20 @@
 }
 
 .formField textarea {
+  /* Textarea com altura mínima confortável */
   min-height: 132px;
   resize: vertical;
 }
 
 .modalButtons {
+  /* Linha dos botões de salvar e cancelar */
   display: flex;
   gap: 0.9rem;
   margin-top: 0.4rem;
 }
 
 .modalButtons button {
+  /* Estilo compartilhado entre os dois botões */
   flex: 1;
   padding: 0.95rem 1rem;
   border-radius: 14px;
@@ -164,21 +181,25 @@
 }
 
 .modalButtons button:hover {
+  /* Hover dos botões */
   transform: translateY(-2px);
   filter: brightness(1.04);
 }
 
 .modalButtons button:active {
+  /* Estado de clique */
   transform: translateY(0);
 }
 
 .primaryButton {
+  /* Botão principal de salvar */
   background: linear-gradient(135deg, #4d897f, #5b958b);
   color: var(--color-white-1);
   box-shadow: 0 18px 32px rgba(77, 137, 127, 0.28);
 }
 
 .secondaryButton {
+  /* Botão secundário de cancelar */
   background: linear-gradient(135deg, #e33934, #c81f1a);
   color: #110909;
   box-shadow: 0 18px 32px rgba(227, 57, 52, 0.28);
@@ -186,6 +207,7 @@
 
 @media (max-width: 480px) {
   .modal {
+    /* Ajustes de tamanho do modal no celular */
     padding: 1.4rem;
     border-radius: 20px;
   }
@@ -199,6 +221,7 @@
   }
 
   .modalButtons {
+    /* Empilha os botões no mobile */
     flex-direction: column;
   }
 }
