@@ -1,36 +1,41 @@
+/* Importa os estilos separados por responsabilidade */
 @import url("header.css");
 @import url("sidebar.css");
 @import url("post.css");
 @import url("newPost.css");
+
+/* Importa fontes usadas no projeto */
 @import url("https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700;800&family=Sora:wght@600;700&display=swap");
 
 :root {
+  /* Variáveis de fonte */
   --font-body: "Manrope", sans-serif;
   --font-display: "Sora", sans-serif;
 
+  /* Variáveis de cor */
   --color-white-1: #ffffff;
-
   --color-blue-1: #184b68;
-
   --color-green-1: #00b37e;
   --color-green-2: #40786f;
-
   --color-gray-1: #323238;
   --color-gray-2: #adadb3;
   --color-gray-3: #202024;
   --color-gray-4: #101013;
-
   --color-red-1: #f44336;
   --color-red-2: #d32f2f;
-
   --color-black-1: #000000;
   --color-border-soft: rgba(255, 255, 255, 0.08);
 }
 
 body {
+  /* Remove margem padrão do navegador */
   margin: 0;
+
+  /* Define a fonte principal do projeto */
   font-family: var(--font-body);
   min-height: 100vh;
+
+  /* Fundo com degradê escuro e toque de verde no topo */
   background:
     radial-gradient(circle at top, rgba(0, 179, 126, 0.14), transparent 24rem),
     linear-gradient(
@@ -40,15 +45,18 @@ body {
       #101614 68%,
       #16312b 100%
     );
+
+  /* Faz o fundo ficar "preso" enquanto o conteúdo rola */
   background-attachment: fixed;
+
+  /* Cria espaço para o header fixo não cobrir o conteúdo */
   padding-top: 10rem;
   color: var(--color-white-1);
 }
 
 @media (max-width: 480px) {
   body {
-    margin: 0;
-    font-family: var(--font-body);
+    /* No mobile eu só reduzo o espaço do topo */
     min-height: 100vh;
     padding-top: 7rem;
   }

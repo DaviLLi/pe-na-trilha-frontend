@@ -1,21 +1,33 @@
+// Hooks usados no componente:
+// - useState: guarda o valor dos campos do formulário
+// - useEffect: escuta eventos externos, como tecla ESC
 import { useEffect, useState } from "react";
 
+// Componente de modal para criar um novo post.
+// Props:
+// - aberto: define se o modal deve aparecer
+// - fechar: função para fechar o modal
+// - aoSalvar: função que recebe os dados do formulário
 function Modal({ aberto, fechar, aoSalvar }) {
+  // Estados dos campos do formulário controlado.
   const [titulo, setTitulo] = useState("");
   const [descricao, setDescricao] = useState("");
   const [endereco, setEndereco] = useState("");
 
+  // Função auxiliar para limpar todos os campos.
   const limparFormulario = () => {
     setTitulo("");
     setDescricao("");
     setEndereco("");
   };
 
+  // Evento usado para fechar o modal e limpar o formulário.
   const handleFechar = () => {
     limparFormulario();
     fechar();
   };
 
+  // Effect usado para ouvir a tecla ESC enquanto o modal estiver aberto.
   useEffect(() => {
     if (!aberto) return undefined;
 
@@ -33,32 +45,41 @@ function Modal({ aberto, fechar, aoSalvar }) {
     return () => window.removeEventListener("keydown", handleEsc);
   }, [aberto, fechar]);
 
+  // Se o modal não estiver aberto, não renderiza nada na tela.
   if (!aberto) return null;
 
+  // Evento de submit do formulário.
   const handleSubmit = (e) => {
+    // Impede o recarregamento padrão da página.
     e.preventDefault();
 
+    // Validação simples para evitar campos vazios.
     if (!titulo.trim() || !descricao.trim() || !endereco.trim()) {
       return;
     }
 
+    // Envia os dados para o componente pai.
     aoSalvar({
       titulo: titulo.trim(),
       descricao: descricao.trim(),
       endereco: endereco.trim(),
     });
 
+    // Limpa o formulário após salvar.
     limparFormulario();
   };
 
   return (
     <>
+      {/* Overlay escuro atrás do modal.
+       */}
       <div
         className='modalOverlay'
         onClick={handleFechar}
         aria-hidden='true'
       ></div>
 
+      {/* Caixa principal do modal */}
       <div
         className='modal'
         role='dialog'
@@ -70,6 +91,9 @@ function Modal({ aberto, fechar, aoSalvar }) {
           <p>Preencha os campos abaixo para publicar uma nova experiência.</p>
         </div>
 
+        {/* Formulário controlado:
+            cada campo tem value + onChange ligado ao estado.
+        */}
         <form id='postForm' onSubmit={handleSubmit}>
           <div className='formField'>
             <label htmlFor='titulo'>Título</label>
@@ -109,6 +133,7 @@ function Modal({ aberto, fechar, aoSalvar }) {
             />
           </div>
 
+          {/* Botões de ação do modal */}
           <div className='modalButtons'>
             <button className='primaryButton' type='submit'>
               Salvar

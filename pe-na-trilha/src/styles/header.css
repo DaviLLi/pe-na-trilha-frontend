@@ -1,6 +1,9 @@
 .header {
+  /* Fundo semi-transparente com blur para dar profundidade */
   background: rgba(32, 32, 36, 0.88);
   backdrop-filter: blur(14px);
+
+  /* Alinha logo e nome no centro */
   display: flex;
   align-items: center;
   justify-content: center;
@@ -14,6 +17,7 @@
 }
 
 .header::after {
+  /* Linha decorativa entre o header e o restante da página */
   content: "";
   position: absolute;
   left: 50%;
@@ -33,10 +37,12 @@
 }
 
 .header img {
+  /* Tamanho do logo no desktop */
   height: 5rem;
 }
 
 .nome {
+  /* Estilo do nome do projeto */
   font-size: 1.1rem;
   color: var(--color-green-2);
   line-height: 1;
@@ -44,19 +50,19 @@
 
 @media (max-width: 480px) {
   .header {
-    display: flex;
-    align-items: center;
-    justify-content: center;
+    /* Ajustes de tamanho para telas pequenas */
     gap: 0.1rem;
     padding: 0.9rem 0;
     width: 100%;
   }
 
   .header img {
+    /* Logo menor no mobile */
     height: 3rem;
   }
 
   .nome {
+    /* Texto menor no mobile */
     font-size: 0.7rem;
     color: var(--color-green-2);
     line-height: 1;
