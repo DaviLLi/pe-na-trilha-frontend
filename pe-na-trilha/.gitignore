@@ -22,3 +22,14 @@ dist-ssr
 *.njsproj
 *.sln
 *.sw?
+
+# ambiente
+.env
+.env.local
+
+# ferramentas locais
+.agents/
+.codex/
+
+# arquivos gerados por IA / ferramentas
+skills-lock.json
