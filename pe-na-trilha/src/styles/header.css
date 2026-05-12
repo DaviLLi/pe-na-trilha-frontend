@@ -3,13 +3,14 @@
   background: rgba(32, 32, 36, 0.88);
   backdrop-filter: blur(14px);
 
-  /* Alinha logo e nome no centro */
+  /* Alinha marca e navegação */
   display: flex;
   align-items: center;
-  justify-content: center;
-  gap: 0.5rem;
-  padding: 1.25rem 0;
+  justify-content: space-between;
+  gap: 1rem;
+  padding: 1.1rem max(1.25rem, calc((100% - 1120px) / 2));
   width: 100%;
+  box-sizing: border-box;
   position: fixed;
   top: 0;
   left: 0;
@@ -38,7 +39,14 @@
 
 .header img {
   /* Tamanho do logo no desktop */
-  height: 5rem;
+  height: 4.5rem;
+}
+
+.brand {
+  /* Agrupa logo e nome do aplicativo */
+  display: flex;
+  align-items: center;
+  gap: 0.55rem;
 }
 
 .nome {
@@ -48,11 +56,66 @@
   line-height: 1;
 }
 
+.mainNav {
+  /* Menu principal exigido na sprint 2 */
+  display: flex;
+  align-items: center;
+  gap: 0.55rem;
+  padding: 0.35rem;
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 999px;
+  background: rgba(10, 16, 14, 0.7);
+}
+
+.navLink {
+  min-height: 2.35rem;
+  padding: 0 1rem;
+  border: 0;
+  border-radius: 999px;
+  background: transparent;
+  color: var(--color-gray-2);
+  cursor: pointer;
+  font-family: var(--font-body);
+  font-size: 0.92rem;
+  font-weight: 700;
+  transition:
+    background-color 0.2s ease,
+    color 0.2s ease,
+    transform 0.2s ease;
+}
+
+.navLink:hover {
+  color: var(--color-white-1);
+  transform: translateY(-1px);
+}
+
+.navLink.active {
+  background: var(--color-green-1);
+  color: #07110e;
+}
+
+@media (max-width: 720px) {
+  .header {
+    flex-direction: column;
+    padding: 0.85rem 1rem;
+  }
+
+  .mainNav {
+    width: 100%;
+    justify-content: center;
+    border-radius: 18px;
+  }
+
+  .navLink {
+    flex: 1;
+    padding: 0 0.55rem;
+  }
+}
+
 @media (max-width: 480px) {
   .header {
     /* Ajustes de tamanho para telas pequenas */
-    gap: 0.1rem;
-    padding: 0.9rem 0;
+    gap: 0.65rem;
     width: 100%;
   }
 

@@ -1,23 +1,14 @@
 # Pé na Trilha
 
 Aplicação front-end desenvolvida em React com Vite para a disciplina de Desenvolvimento Front-End II.
-O projeto simula uma plataforma em que usuários podem publicar trilhas, visualizar postagens no feed e remover publicações quando desejarem.
+
+O projeto simula uma plataforma em que usuários podem publicar trilhas, visualizar postagens no feed, remover publicações e manter os dados salvos no navegador.
 
 ## Objetivo do Projeto
 
-O sistema foi pensado para organizar e compartilhar experiências de trilhas de forma simples e visual.
-A proposta é permitir que um usuário publique informações básicas sobre uma trilha, como:
+O sistema foi pensado para organizar e compartilhar experiências de trilhas de forma simples e visual. A proposta é permitir que um usuário publique informações básicas sobre uma trilha, como título, descrição e endereço.
 
-- título
-- descrição
-- endereço
-
-Nesta primeira sprint, o foco foi construir a base do projeto em React, aplicar componentização, trabalhar com estados, eventos e deixar a aplicação funcionando no navegador.
-
-## Tema da Aplicação
-
-O tema do projeto é o compartilhamento de trilhas e experiências ao ar livre.
-O usuário principal da aplicação é uma pessoa interessada em registrar e visualizar publicações relacionadas a trilhas.
+Na Sprint 2, o projeto evoluiu para um mini aplicativo React com navegação entre páginas, formulário controlado, listagem dinâmica e persistência com `localStorage`.
 
 ## Tecnologias Utilizadas
 
@@ -26,20 +17,43 @@ O usuário principal da aplicação é uma pessoa interessada em registrar e vis
 - JavaScript
 - CSS
 - ESLint
+- localStorage
+
+## Funcionalidades Implementadas
+
+- Aplicação React criada com Vite.
+- Menu de navegação com 3 páginas: Trilhas, Sobre e Sprint 2.
+- Interface organizada em componentes.
+- Abertura e fechamento de modal.
+- Formulário controlado com `useState`.
+- Cadastro com 3 campos obrigatórios: título, descrição e endereço.
+- Criação de novas publicações.
+- Listagem dinâmica dos posts no feed.
+- Exclusão de publicações.
+- Contagem de posts na sidebar.
+- Persistência dos posts com `localStorage`.
+- Serviço separado para regras de armazenamento em `src/services/postsStorage.js`.
+- Tratamento visual para erro de armazenamento local.
+- README atualizado com instruções de execução.
 
 ## Estrutura do Projeto
 
 ```text
 pe-na-trilha-frontend/
 ├── pe-na-trilha/
-│   ├── public/
 │   ├── src/
 │   │   ├── assets/
 │   │   ├── components/
+│   │   │   ├── About.jsx
+│   │   │   ├── Header.jsx
+│   │   │   ├── Modal.jsx
+│   │   │   ├── PostTrilha.jsx
+│   │   │   ├── Presentation.jsx
+│   │   │   └── Sidebar.jsx
+│   │   ├── services/
+│   │   │   └── postsStorage.js
 │   │   ├── styles/
 │   │   ├── App.jsx
-│   │   ├── App.css
-│   │   ├── index.css
 │   │   └── main.jsx
 │   ├── index.html
 │   ├── package.json
@@ -47,117 +61,50 @@ pe-na-trilha-frontend/
 └── README.md
 ```
 
-## Componentes Principais
+## Organização Principal
 
-### `Header.jsx`
-Responsável pelo cabeçalho da aplicação, exibindo a logo e o nome do sistema.
-
-### `Sidebar.jsx`
-Exibe as informações do usuário, a quantidade de posts e o botão para criar uma nova publicação.
-
-### `Modal.jsx`
-Renderiza o formulário de criação de trilhas.
-Usa formulário controlado com `useState` e eventos como `onChange`, `onSubmit` e clique para fechar.
-
-### `PostTrilha.jsx`
-Renderiza cada card publicado no feed, mostrando os dados da trilha e a ação de apagar.
-
-### `App.jsx`
-Componente principal que centraliza o estado da aplicação e faz a comunicação entre os demais componentes.
-
-## Funcionalidades Implementadas
-
-- aplicação React criada com Vite
-- interface organizada em componentes
-- abertura e fechamento de modal
-- formulário controlado com 3 campos
-- criação de novas publicações
-- listagem dinâmica dos posts no feed
-- exclusão de publicações
-- contagem de posts na sidebar
-- interface estilizada com CSS próprio
-- favicon e título personalizados no navegador
-
-## Conceitos de React Aplicados
-
-- componentização
-- props
-- `useState`
-- `useEffect`
-- renderização condicional
-- renderização de listas com `map`
-- eventos em formulários e botões
+- `src/App.jsx`: controla navegação, estado principal dos posts e modal.
+- `src/components/Header.jsx`: topo e menu de navegação.
+- `src/components/Sidebar.jsx`: perfil lateral e botão de novo post.
+- `src/components/Modal.jsx`: formulário controlado de cadastro.
+- `src/components/PostTrilha.jsx`: card de cada post cadastrado.
+- `src/components/About.jsx`: página sobre o problema, solução e nicho.
+- `src/components/Presentation.jsx`: roteiro da apresentação da Sprint 2.
+- `src/services/postsStorage.js`: leitura e gravação dos posts no `localStorage`.
+- `src/styles`: arquivos CSS separados por responsabilidade.
 
 ## Como Executar o Projeto
 
-### 1. Clonar o repositório
-
 ```bash
-git clone <URL_DO_REPOSITORIO>
-```
-
-### 2. Acessar a pasta do projeto
-
-```bash
-cd pe-na-trilha-frontend/pe-na-trilha
-```
-
-### 3. Instalar as dependências
-
-```bash
+cd pe-na-trilha
 npm install
-```
-
-### 4. Rodar o projeto em ambiente de desenvolvimento
-
-```bash
 npm run dev
 ```
 
-Depois disso, basta abrir no navegador o endereço exibido pelo Vite, normalmente algo como:
+Depois, abra no navegador o endereço exibido pelo Vite, normalmente:
 
 ```bash
 http://localhost:5173
 ```
 
-## Outros Scripts Disponíveis
-
-### Build de produção
+## Scripts Disponíveis
 
 ```bash
+npm run dev
 npm run build
-```
-
-### Pré-visualização do build
-
-```bash
+npm run lint
 npm run preview
 ```
 
-### Verificação com ESLint
+## Roteiro Sugerido para Apresentação
 
-```bash
-npm run lint
-```
-
-## Estado Atual da Sprint 1
-
-Nesta etapa, o projeto já atende a base técnica esperada para a Sprint 1:
-
-- aplicação criada com React + Vite
-- componentes separados em arquivos `.jsx`
-- uso de estado e eventos demonstráveis
-- interface funcional rodando no navegador
-
-## Planejamento para a Sprint 2
-
-As próximas evoluções previstas para o projeto são:
-
-- criação de menu de navegação com múltiplas páginas
-- persistência de dados com `localStorage`
-- tela de login
-- criação de usuário
-- login com senha
+1. Apresentar o título e o tema do app: Pé na Trilha.
+2. Mostrar a organização dos componentes no código.
+3. Demonstrar a navegação entre as 3 páginas.
+4. Cadastrar uma trilha usando o formulário.
+5. Mostrar a listagem dinâmica atualizando em tempo real.
+6. Recarregar a página e mostrar que os dados continuam salvos.
+7. Comentar dificuldades e aprendizados da Sprint 2.
 
 ## Integrantes do Grupo
 
@@ -165,8 +112,3 @@ As próximas evoluções previstas para o projeto são:
 - Victor Schmitz Alvim de Oliveira
 - Hiago Farias Veloso
 - Hiuri Machado Cardozo
-
-## Observações
-
-Este projeto está em desenvolvimento incremental para as sprints da disciplina.
-Novas funcionalidades serão adicionadas nas próximas etapas conforme os requisitos da atividade.
