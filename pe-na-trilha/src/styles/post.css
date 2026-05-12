@@ -177,6 +177,15 @@
   font-size: 1.1rem;
 }
 
+.storageAlert {
+  padding: 1rem 1.1rem;
+  border: 1px solid rgba(244, 67, 54, 0.35);
+  border-radius: 16px;
+  background: rgba(244, 67, 54, 0.1);
+  color: #ffb4ad;
+  line-height: 1.5;
+}
+
 @media (max-width: 768px) {
   .layout {
     /* Reduz a largura total no tablet/mobile */

@@ -1,11 +1,14 @@
-// useState é o hook usado para criar e atualizar estados no componente.
-import { useState } from "react";
+// useEffect e useState são hooks usados para efeitos e estados do componente.
+import { useEffect, useState } from "react";
 
 // Componentes visuais da aplicação.
 import Header from "./components/Header";
 import Sidebar from "./components/Sidebar";
 import Modal from "./components/Modal";
 import PostTrilha from "./components/PostTrilha";
+import About from "./components/About";
+import Presentation from "./components/Presentation";
+import { carregarPosts, salvarPosts } from "./services/postsStorage";
 
 // Estilo principal da aplicação.
 import "./styles/style.css";
@@ -13,11 +16,29 @@ import "./styles/style.css";
 // Componente principal da aplicação.
 // Ele junta header, sidebar, feed e modal.
 function App() {
+  const [dadosIniciais] = useState(() => carregarPosts());
+
+  // Estado que controla a página exibida no mini aplicativo.
+  const [paginaAtual, setPaginaAtual] = useState("trilhas");
+
   // Estado que controla se o modal está aberto ou fechado.
   const [modalAberto, setModalAberto] = useState(false);
 
   // Estado que guarda a lista de posts publicados.
-  const [posts, setPosts] = useState([]);
+  const [posts, setPosts] = useState(dadosIniciais.posts);
+
+  // Estado usado para avisar problemas de persistência ao usuário.
+  const [erroStorage, setErroStorage] = useState(dadosIniciais.erro);
+
+  // Toda alteração na lista é persistida no localStorage.
+  useEffect(() => {
+    setErroStorage(salvarPosts(posts));
+  }, [posts]);
+
+  const navegarPara = (pagina) => {
+    setPaginaAtual(pagina);
+    setModalAberto(false);
+  };
 
   // Função/evento chamado quando o modal envia um novo post.
   // Aqui eu adiciono o novo post no início da lista e fecho o modal.
@@ -52,11 +73,16 @@ function App() {
     );
   };
 
-  return (
-    <>
-      {/* Componente do topo da página */}
-      <Header />
+  const renderizarPagina = () => {
+    if (paginaAtual === "sobre") {
+      return <About />;
+    }
 
+    if (paginaAtual === "sprint") {
+      return <Presentation />;
+    }
+
+    return (
       <main className='layout'>
         {/* Sidebar recebe props:
             - postCount: quantidade atual de posts
@@ -68,6 +94,12 @@ function App() {
         />
 
         <section className='feed'>
+          {erroStorage ? (
+            <div className='storageAlert' role='alert'>
+              {erroStorage}
+            </div>
+          ) : null}
+
           {/* Renderização condicional:
               se não houver posts, mostra mensagem vazia.
               se houver, percorre a lista e desenha um card para cada item.
@@ -89,6 +121,15 @@ function App() {
           )}
         </section>
       </main>
+    );
+  };
+
+  return (
+    <>
+      {/* Componente do topo da página */}
+      <Header paginaAtual={paginaAtual} aoNavegar={navegarPara} />
+
+      {renderizarPagina()}
 
       {/* Modal recebe:
           - aberto: controla exibição
