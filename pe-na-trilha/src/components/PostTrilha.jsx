@@ -1,4 +1,20 @@
-// Componente menor só para desenhar o ícone da lixeira.
+import { Link } from "react-router-dom";
+
+function EditIcon() {
+  return (
+    <svg viewBox='0 0 24 24' aria-hidden='true'>
+      <path
+        d='m4 16.5-.5 4 4-.5L19 8.5 15.5 5 4 16.5Zm9.8-9.8 3.5 3.5'
+        fill='none'
+        stroke='currentColor'
+        strokeLinecap='round'
+        strokeLinejoin='round'
+        strokeWidth='1.8'
+      />
+    </svg>
+  );
+}
+
 function TrashIcon() {
   return (
     <svg viewBox='0 0 24 24' aria-hidden='true'>
@@ -14,48 +30,50 @@ function TrashIcon() {
   );
 }
 
-// Componente responsável por mostrar um card de trilha publicada.
-// Props:
-// - post: objeto com os dados do post
-// - onDelete: evento para apagar o post
-function PostTrilha({ post, onDelete }) {
+function PostTrilha({ trilha, onDelete, excluindo }) {
   return (
     <article className='post'>
       <header className='postHeader'>
-        {/* Bloco com avatar e informações do autor */}
         <div className='profileGroup'>
           <div className='avatarWithBorderPost'>
             <img
-              src={post.avatar}
+              src='https://github.com/DaviLLi.png'
               className='avatarPost'
-              alt={`Foto de ${post.autor}`}
+              alt='Foto de Davi Martinelli'
             />
           </div>
 
           <div className='userInfo'>
-            <h2>{post.autor}</h2>
-            <span>{post.papel}</span>
+            <h2>Davi Martinelli</h2>
+            <span>Trilheiro</span>
           </div>
         </div>
 
         <div className='actionButtons'>
-          {/* Botão/evento para apagar o post */}
+          <Link
+            className='editBtn'
+            to={`/trilhas/${trilha._id}/editar`}
+            aria-label={`Editar trilha ${trilha.titulo}`}
+            title='Editar trilha'
+          >
+            <EditIcon />
+          </Link>
           <button
             className='deleteBtn'
             type='button'
             onClick={onDelete}
-            aria-label={`Apagar post ${post.titulo}`}
-            title='Apagar post'
+            disabled={excluindo}
+            aria-label={`Excluir trilha ${trilha.titulo}`}
+            title='Excluir trilha'
           >
             <TrashIcon />
           </button>
         </div>
       </header>
 
-      {/* Conteúdo principal do post */}
-      <h3 className='postTitle'>{post.titulo}</h3>
-      <p className='postText'>{post.descricao}</p>
-      <span className='postAddress'>{post.endereco}</span>
+      <h3 className='postTitle'>{trilha.titulo}</h3>
+      <p className='postText'>{trilha.descricao}</p>
+      <span className='postAddress'>{trilha.endereco}</span>
     </article>
   );
 }

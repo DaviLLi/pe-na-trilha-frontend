@@ -1,42 +1,51 @@
-# Pé na Trilha
+# Pé na Trilha - Sprint 3
 
-Aplicação front-end desenvolvida em React com Vite para a disciplina de Desenvolvimento Front-End II.
+Projeto acadêmico full stack para cadastro e gerenciamento de trilhas. Nesta
+sprint, a persistência em `localStorage` foi substituída por uma API REST com
+MongoDB Atlas.
 
-O projeto simula uma plataforma em que usuários podem publicar trilhas, visualizar postagens no feed, remover publicações e manter os dados salvos no navegador.
+## Tecnologias
 
-## Objetivo do Projeto
+### Frontend
 
-O sistema foi pensado para organizar e compartilhar experiências de trilhas de forma simples e visual. A proposta é permitir que um usuário publique informações básicas sobre uma trilha, como título, descrição e endereço.
-
-Na Sprint 2, o projeto evoluiu para um mini aplicativo React com navegação entre páginas, formulário controlado, listagem dinâmica e persistência com `localStorage`.
-
-## Tecnologias Utilizadas
-
-- React
-- Vite
-- JavaScript
+- React com Vite
+- React Router
+- Axios
 - CSS
-- ESLint
-- localStorage
 
-## Funcionalidades Implementadas
+### Backend
 
-- Aplicação React criada com Vite.
-- Menu de navegação com 3 páginas: Trilhas, Sobre e Sprint 2.
-- Interface organizada em componentes.
-- Abertura e fechamento de modal.
-- Formulário controlado com `useState`.
-- Cadastro com 3 campos obrigatórios: título, descrição e endereço.
-- Criação de novas publicações.
-- Listagem dinâmica dos posts no feed.
-- Exclusão de publicações.
-- Contagem de posts na sidebar.
-- Persistência dos posts com `localStorage`.
-- Serviço separado para regras de armazenamento em `src/services/postsStorage.js`.
-- Tratamento visual para erro de armazenamento local.
-- README atualizado com instruções de execução.
+- Node.js
+- Express
+- Mongoose
+- Cors
+- Dotenv
+- MongoDB Atlas
 
-## Estrutura do Projeto
+## Funcionalidades
+
+- Listar todas as trilhas.
+- Buscar uma trilha para edição.
+- Cadastrar uma trilha.
+- Editar uma trilha.
+- Excluir uma trilha.
+- Exibir mensagens de carregamento e erro.
+- Navegar entre as páginas com React Router.
+
+Cada trilha possui somente os campos:
+
+```json
+{
+  "titulo": "String",
+  "descricao": "String",
+  "endereco": "String"
+}
+```
+
+O projeto não possui autenticação, usuários, comentários, avaliações ou upload
+de imagens.
+
+## Estrutura
 
 ```text
 pe-na-trilha-frontend/
@@ -44,36 +53,72 @@ pe-na-trilha-frontend/
 │   ├── src/
 │   │   ├── assets/
 │   │   ├── components/
-│   │   │   ├── About.jsx
-│   │   │   ├── Header.jsx
-│   │   │   ├── Modal.jsx
-│   │   │   ├── PostTrilha.jsx
-│   │   │   ├── Presentation.jsx
-│   │   │   └── Sidebar.jsx
+│   │   ├── pages/
 │   │   ├── services/
-│   │   │   └── postsStorage.js
 │   │   ├── styles/
 │   │   ├── App.jsx
 │   │   └── main.jsx
-│   ├── index.html
-│   ├── package.json
-│   └── vite.config.js
+│   ├── .env.example
+│   └── package.json
+├── pe-na-trilha-backend/
+│   ├── src/
+│   │   ├── config/
+│   │   ├── controllers/
+│   │   ├── middlewares/
+│   │   ├── models/
+│   │   ├── routes/
+│   │   ├── app.js
+│   │   └── server.js
+│   ├── .env.example
+│   └── package.json
 └── README.md
 ```
 
-## Organização Principal
+## Rotas da API
 
-- `src/App.jsx`: controla navegação, estado principal dos posts e modal.
-- `src/components/Header.jsx`: topo e menu de navegação.
-- `src/components/Sidebar.jsx`: perfil lateral e botão de novo post.
-- `src/components/Modal.jsx`: formulário controlado de cadastro.
-- `src/components/PostTrilha.jsx`: card de cada post cadastrado.
-- `src/components/About.jsx`: página sobre o problema, solução e nicho.
-- `src/components/Presentation.jsx`: roteiro da apresentação da Sprint 2.
-- `src/services/postsStorage.js`: leitura e gravação dos posts no `localStorage`.
-- `src/styles`: arquivos CSS separados por responsabilidade.
+| Método | Rota | Ação |
+| --- | --- | --- |
+| `GET` | `/trilhas` | Lista todas as trilhas |
+| `GET` | `/trilhas/:id` | Busca uma trilha |
+| `POST` | `/trilhas` | Cadastra uma trilha |
+| `PUT` | `/trilhas/:id` | Atualiza uma trilha |
+| `DELETE` | `/trilhas/:id` | Exclui uma trilha |
 
-## Como Executar o Projeto
+## Configuração do MongoDB Atlas
+
+1. Crie um cluster no MongoDB Atlas.
+2. Crie um usuário de banco de dados.
+3. Autorize seu endereço IP em **Network Access**.
+4. Copie a string de conexão do cluster.
+5. No arquivo `pe-na-trilha-backend/.env`, substitua o valor de exemplo:
+
+```env
+PORT=3000
+MONGO_URI=mongodb+srv://usuario:senha@cluster.mongodb.net/penatrilha
+FRONTEND_URL=http://localhost:5173
+```
+
+Não publique o arquivo `.env` nem credenciais reais no repositório.
+
+## Como executar o backend
+
+Em um terminal:
+
+```bash
+cd pe-na-trilha-backend
+npm install
+npm run dev
+```
+
+A API ficará disponível em:
+
+```text
+http://localhost:3000
+```
+
+## Como executar o frontend
+
+Em outro terminal:
 
 ```bash
 cd pe-na-trilha
@@ -81,13 +126,22 @@ npm install
 npm run dev
 ```
 
-Depois, abra no navegador o endereço exibido pelo Vite, normalmente:
+O frontend ficará disponível normalmente em:
 
-```bash
+```text
 http://localhost:5173
 ```
 
-## Scripts Disponíveis
+Por padrão, o frontend acessa `http://localhost:3000`. Para usar outro endereço,
+crie `pe-na-trilha/.env` com:
+
+```env
+VITE_API_URL=http://localhost:3000
+```
+
+## Scripts
+
+Frontend:
 
 ```bash
 npm run dev
@@ -96,17 +150,25 @@ npm run lint
 npm run preview
 ```
 
-## Roteiro Sugerido para Apresentação
+Backend:
 
-1. Apresentar o título e o tema do app: Pé na Trilha.
-2. Mostrar a organização dos componentes no código.
-3. Demonstrar a navegação entre as 3 páginas.
-4. Cadastrar uma trilha usando o formulário.
-5. Mostrar a listagem dinâmica atualizando em tempo real.
-6. Recarregar a página e mostrar que os dados continuam salvos.
-7. Comentar dificuldades e aprendizados da Sprint 2.
+```bash
+npm run dev
+npm start
+```
 
-## Integrantes do Grupo
+## Organização do código
+
+- `src/pages`: telas associadas às rotas do frontend.
+- `src/components`: componentes visuais reutilizáveis.
+- `src/services`: cliente Axios e operações da API.
+- `src/models/Trilha.js`: schema Mongoose da entidade.
+- `src/controllers/trilhaController.js`: regras do CRUD.
+- `src/routes/trilhaRoutes.js`: definição das rotas REST.
+- `src/config/database.js`: conexão isolada com MongoDB.
+- `src/middlewares/errorHandler.js`: respostas básicas de erro.
+
+## Integrantes do grupo
 
 - Davi Martinelli Landal
 - Victor Schmitz Alvim de Oliveira

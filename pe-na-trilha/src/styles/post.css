@@ -118,7 +118,8 @@
   display: flex;
 }
 
-.actionButtons button {
+.actionButtons button,
+.actionButtons a {
   /* Botão circular da lixeira */
   width: 2.5rem;
   height: 2.5rem;
@@ -130,6 +131,7 @@
   display: flex;
   justify-content: center;
   align-items: center;
+  box-sizing: border-box;
   transition:
     transform 0.2s ease,
     color 0.2s ease,
@@ -137,18 +139,35 @@
     border-color 0.2s ease;
 }
 
-.actionButtons button:hover {
+.actionButtons button:hover,
+.actionButtons a:hover {
   transform: translateY(-1px);
 }
 
-.deleteBtn svg {
+.deleteBtn svg,
+.editBtn svg {
   width: 100%;
   height: 100%;
+}
+
+.editBtn {
+  color: var(--color-green-1);
+}
+
+.editBtn:hover {
+  color: var(--color-white-1);
+  background: rgba(0, 179, 126, 0.1);
+  border-color: rgba(0, 179, 126, 0.24);
 }
 
 .deleteBtn {
   /* Cor padrão do botão de apagar */
   color: var(--color-red-2);
+}
+
+.deleteBtn:disabled {
+  cursor: wait;
+  opacity: 0.5;
 }
 
 .deleteBtn:hover {
