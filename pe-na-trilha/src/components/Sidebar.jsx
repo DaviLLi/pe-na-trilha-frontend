@@ -1,22 +1,20 @@
-// Componente lateral.
-// Recebe props para abrir o modal e mostrar a quantidade de posts.
-function Sidebar({ onNovoPost, postCount }) {
+import { Link } from "react-router-dom";
+
+function Sidebar({ trilhaCount }) {
   return (
     <aside className='sidebar'>
-      {/* Imagem de capa do perfil */}
       <img
         className='cover'
         src='https://vocenaneve.com.br/wp-content/uploads/2021/03/paisagens-com-montanhas-de-neve.jpg'
-        alt='Capa'
+        alt='Montanhas cobertas por neve'
       />
 
       <div className='profile'>
-        {/* Avatar do usuário */}
         <div className='avatarWithBorder'>
           <img
             src='https://github.com/DaviLLi.png'
             className='avatar'
-            alt='Foto do usuário'
+            alt='Foto de Davi Martinelli'
           />
         </div>
 
@@ -24,24 +22,15 @@ function Sidebar({ onNovoPost, postCount }) {
         <span>Trilheiro</span>
       </div>
 
-      {/* Mostra a quantidade de posts vinda por props */}
       <h2 className='title'>
-        {postCount} <strong className='subTitle'>Posts</strong>
+        {trilhaCount}{" "}
+        <strong className='subTitle'>
+          {trilhaCount === 1 ? "Trilha" : "Trilhas"}
+        </strong>
       </h2>
 
       <footer>
-        <a
-          href='#'
-          onClick={(e) => {
-            // Evita o comportamento padrão do link.
-            e.preventDefault();
-
-            // Dispara o evento recebido por props para abrir o modal.
-            onNovoPost();
-          }}
-        >
-          Novo Post
-        </a>
+        <Link to='/trilhas/nova'>Nova Trilha</Link>
       </footer>
     </aside>
   );

@@ -1,36 +1,33 @@
-// Importa a imagem do logo para usar no componente.
+import { NavLink } from "react-router-dom";
 import logo from "../assets/logo.png";
 
 const navItems = [
-  { id: "trilhas", label: "Trilhas" },
-  { id: "sobre", label: "Sobre" },
-  { id: "sprint", label: "Sprint 2" },
+  { path: "/trilhas", label: "Trilhas" },
+  { path: "/sobre", label: "Sobre" },
+  { path: "/sprint-3", label: "Sprint 3" },
 ];
 
-// Componente responsável pelo topo da aplicação.
-function Header({ paginaAtual, aoNavegar }) {
+function Header() {
   return (
     <header className='header'>
-      <div className='brand'>
-        {/* Logo do projeto */}
+      <NavLink className='brand' to='/trilhas' aria-label='Ir para as trilhas'>
         <img src={logo} alt='Logo do Pé na Trilha' />
-
-        {/* Área do nome do sistema */}
         <div className='nome'>
           <h1>Pé na Trilha</h1>
         </div>
-      </div>
+      </NavLink>
 
       <nav className='mainNav' aria-label='Navegação principal'>
         {navItems.map((item) => (
-          <button
-            key={item.id}
-            className={paginaAtual === item.id ? "navLink active" : "navLink"}
-            type='button'
-            onClick={() => aoNavegar(item.id)}
+          <NavLink
+            key={item.path}
+            className={({ isActive }) =>
+              isActive ? "navLink active" : "navLink"
+            }
+            to={item.path}
           >
             {item.label}
-          </button>
+          </NavLink>
         ))}
       </nav>
     </header>

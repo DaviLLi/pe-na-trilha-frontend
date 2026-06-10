@@ -13,19 +13,17 @@ const About = () => (
       <article className='infoPanel'>
         <h2>Problema a ser resolvido</h2>
         <p>
-          Hoje faltam espaços digitais confiáveis onde trilheiros encontrem
-          informações reais, detalhadas e atualizadas sobre percursos. Quem busca
-          novas trilhas enfrenta dificuldades para localizar relatos completos,
-          avaliações, fotos e dados essenciais de segurança.
+          Hoje faltam espaços digitais onde trilheiros encontrem informações
+          claras sobre percursos. Quem busca novas trilhas enfrenta dificuldades
+          para localizar descrições e endereços em um único lugar.
         </p>
       </article>
 
       <article className='infoPanel'>
         <h2>Solução com valor agregado</h2>
         <p>
-          O Pé na Trilha oferece uma plataforma simples, intuitiva e confiável
-          para trilheiros compartilharem rotas, fotos e experiências. A solução
-          combina informações essenciais, segurança e colaboração da comunidade.
+          O Pé na Trilha oferece uma plataforma simples para cadastrar, consultar,
+          editar e excluir informações essenciais sobre trilhas.
         </p>
       </article>
 
