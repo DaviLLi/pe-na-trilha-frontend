@@ -1,51 +1,46 @@
-# Pé na Trilha - Sprint 3
+# Pe na Trilha
 
-Projeto acadêmico full stack para cadastro e gerenciamento de trilhas. Nesta
-sprint, a persistência em `localStorage` foi substituída por uma API REST com
-MongoDB Atlas.
+Projeto academico full stack para cadastro e gerenciamento de trilhas. A aplicacao e dividida em um frontend React com Vite e uma API REST em Node.js, responsavel pela persistencia dos dados no banco.
 
 ## Tecnologias
 
-### Frontend
+Frontend:
 
-- React com Vite
+- React
+- Vite
 - React Router
 - Axios
 - CSS
 
-### Backend
+Backend:
 
 - Node.js
 - Express
-- Mongoose
-- Cors
+- MongoDB com Mongoose
+- CORS
 - Dotenv
-- MongoDB Atlas
 
 ## Funcionalidades
 
-- Listar todas as trilhas.
-- Buscar uma trilha para edição.
-- Cadastrar uma trilha.
-- Editar uma trilha.
-- Excluir uma trilha.
-- Exibir mensagens de carregamento e erro.
-- Navegar entre as páginas com React Router.
+- Listagem de trilhas cadastradas.
+- Cadastro de nova trilha.
+- Edicao de trilha existente.
+- Exclusao de trilha.
+- Busca de trilha por ID para preenchimento do formulario de edicao.
+- Mensagens de carregamento e erro quando a API nao responde.
+- Navegacao entre paginas com React Router.
 
-Cada trilha possui somente os campos:
+Cada trilha possui os seguintes campos:
 
 ```json
 {
-  "titulo": "String",
-  "descricao": "String",
-  "endereco": "String"
+  "titulo": "Nome da trilha",
+  "descricao": "Descricao da trilha",
+  "endereco": "Localizacao da trilha"
 }
 ```
 
-O projeto não possui autenticação, usuários, comentários, avaliações ou upload
-de imagens.
-
-## Estrutura
+## Estrutura do projeto
 
 ```text
 pe-na-trilha-frontend/
@@ -59,7 +54,8 @@ pe-na-trilha-frontend/
 │   │   ├── App.jsx
 │   │   └── main.jsx
 │   ├── .env.example
-│   └── package.json
+│   ├── package.json
+│   └── vite.config.js
 ├── pe-na-trilha-backend/
 │   ├── src/
 │   │   ├── config/
@@ -74,33 +70,54 @@ pe-na-trilha-frontend/
 └── README.md
 ```
 
+## Rotas do frontend
+
+| Rota | Pagina |
+| --- | --- |
+| `/` | Pagina inicial |
+| `/trilhas` | Lista de trilhas |
+| `/trilhas/nova` | Cadastro de trilha |
+| `/trilhas/:id/editar` | Edicao de trilha |
+| `/sobre` | Sobre o projeto |
+| `/sprint-3` | Apresentacao da sprint |
+
 ## Rotas da API
 
-| Método | Rota | Ação |
+| Metodo | Rota | Acao |
 | --- | --- | --- |
 | `GET` | `/trilhas` | Lista todas as trilhas |
-| `GET` | `/trilhas/:id` | Busca uma trilha |
-| `POST` | `/trilhas` | Cadastra uma trilha |
+| `GET` | `/trilhas/:id` | Busca uma trilha especifica |
+| `POST` | `/trilhas` | Cadastra uma nova trilha |
 | `PUT` | `/trilhas/:id` | Atualiza uma trilha |
-| `DELETE` | `/trilhas/:id` | Exclui uma trilha |
+| `DELETE` | `/trilhas/:id` | Remove uma trilha |
 
-## Configuração do MongoDB Atlas
+## Como configurar
 
-1. Crie um cluster no MongoDB Atlas.
-2. Crie um usuário de banco de dados.
-3. Autorize seu endereço IP em **Network Access**.
-4. Copie a string de conexão do cluster.
-5. No arquivo `pe-na-trilha-backend/.env`, substitua o valor de exemplo:
+### Frontend
+
+Crie um arquivo `.env` dentro da pasta `pe-na-trilha`:
+
+```env
+VITE_API_URL=http://localhost:3000
+```
+
+Essa variavel define o endereco da API usada pelo Axios. Se ela nao existir, o frontend usa `http://localhost:3000` por padrao.
+
+### Backend
+
+Crie um arquivo `.env` dentro da pasta `pe-na-trilha-backend`:
 
 ```env
 PORT=3000
-MONGO_URI=mongodb+srv://usuario:senha@cluster.mongodb.net/penatrilha
+MONGO_URI=mongodb+srv://usuario:senha@cluster.mongodb.net/pe-na-trilha
 FRONTEND_URL=http://localhost:5173
 ```
 
-Não publique o arquivo `.env` nem credenciais reais no repositório.
+Substitua `MONGO_URI` pela string real do seu banco MongoDB. Nao envie arquivos `.env` com credenciais para o repositorio.
 
-## Como executar o backend
+## Como executar
+
+### Backend
 
 Em um terminal:
 
@@ -110,13 +127,13 @@ npm install
 npm run dev
 ```
 
-A API ficará disponível em:
+A API ficara disponivel em:
 
 ```text
 http://localhost:3000
 ```
 
-## Como executar o frontend
+### Frontend
 
 Em outro terminal:
 
@@ -126,17 +143,10 @@ npm install
 npm run dev
 ```
 
-O frontend ficará disponível normalmente em:
+O Vite mostrara o endereco local do frontend, normalmente:
 
 ```text
 http://localhost:5173
-```
-
-Por padrão, o frontend acessa `http://localhost:3000`. Para usar outro endereço,
-crie `pe-na-trilha/.env` com:
-
-```env
-VITE_API_URL=http://localhost:3000
 ```
 
 ## Scripts
@@ -157,18 +167,49 @@ npm run dev
 npm start
 ```
 
-## Organização do código
+## Integracao entre front e back
 
-- `src/pages`: telas associadas às rotas do frontend.
-- `src/components`: componentes visuais reutilizáveis.
-- `src/services`: cliente Axios e operações da API.
-- `src/models/Trilha.js`: schema Mongoose da entidade.
-- `src/controllers/trilhaController.js`: regras do CRUD.
-- `src/routes/trilhaRoutes.js`: definição das rotas REST.
-- `src/config/database.js`: conexão isolada com MongoDB.
-- `src/middlewares/errorHandler.js`: respostas básicas de erro.
+O frontend centraliza a configuracao da API em:
 
-## Integrantes do grupo
+```text
+pe-na-trilha/src/services/api.js
+```
+
+As chamadas para as rotas de trilhas ficam em:
+
+```text
+pe-na-trilha/src/services/trilhasService.js
+```
+
+Esse arquivo usa o cliente Axios para chamar:
+
+```js
+GET /trilhas
+GET /trilhas/:id
+POST /trilhas
+PUT /trilhas/:id
+DELETE /trilhas/:id
+```
+
+## Organizacao do codigo
+
+- `pe-na-trilha/src/pages`: paginas principais da aplicacao.
+- `pe-na-trilha/src/components`: componentes reutilizaveis.
+- `pe-na-trilha/src/services`: comunicacao com a API.
+- `pe-na-trilha/src/styles`: arquivos de estilo.
+- `pe-na-trilha-backend/src/routes`: definicao das rotas da API.
+- `pe-na-trilha-backend/src/controllers`: regras das operacoes de CRUD.
+- `pe-na-trilha-backend/src/models`: schemas do banco de dados.
+- `pe-na-trilha-backend/src/config`: configuracoes de conexao.
+- `pe-na-trilha-backend/src/middlewares`: validacoes e tratamento de erros.
+
+## Observacoes
+
+- O backend deve estar rodando antes de usar as telas de cadastro, listagem, edicao e exclusao.
+- O CORS do backend deve permitir a origem do frontend, normalmente `http://localhost:5173`.
+- O projeto nao possui autenticacao, upload de imagens, comentarios ou avaliacoes.
+
+## Integrantes
 
 - Davi Martinelli Landal
 - Victor Schmitz Alvim de Oliveira
