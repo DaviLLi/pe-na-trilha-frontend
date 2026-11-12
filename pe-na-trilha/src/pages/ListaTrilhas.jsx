@@ -1,3 +1,5 @@
+import { useAuth } from "../contexts/useAuth";
+import { obterPermissoesTrilha } from "../services/trilhaPermissoes.js";
 import axios from "axios";
 import { useEffect, useMemo, useState } from "react";
 import { Link } from "react-router-dom";
@@ -9,6 +11,7 @@ import {
 } from "../services/trilhasService";
 
 function ListaTrilhas() {
+  const { usuario } = useAuth();
   const [trilhas, setTrilhas] = useState([]);
   const [carregando, setCarregando] = useState(true);
   const [erro, setErro] = useState("");
@@ -49,8 +52,9 @@ function ListaTrilhas() {
   }, []);
 
   const handleExcluir = async (trilha) => {
+    if (!obterPermissoesTrilha(trilha, usuario).excluir) return;
     const confirmou = window.confirm(
-      `Deseja realmente excluir a trilha "${trilha.titulo}"?`,
+      `Excluir permanentemente a publicação "${trilha.titulo}"? Esta ação não pode ser desfeita.`,
     );
 
     if (!confirmou) return;

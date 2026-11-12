@@ -2,6 +2,11 @@
 
 Projeto academico full stack para cadastro e gerenciamento de trilhas. A aplicacao e dividida em um frontend React com Vite e uma API REST em Node.js, responsavel pela persistencia dos dados no banco.
 
+> Estado atual do frontend: autenticação por cookies, perguntas opcionais, seletor de duração,
+> Central de Ajuda, documentos e aceite no cadastro estão implementados. Publicação, aprovação
+> e contagem de medalhas ainda dependem de contratos com a API. Consulte
+> [contratos e limitações da integração](docs/integracao-frontend.md) antes de usar as instruções históricas abaixo.
+
 ## Tecnologias
 
 Frontend:
@@ -207,7 +212,7 @@ DELETE /trilhas/:id
 
 - O backend deve estar rodando antes de usar as telas de cadastro, listagem, edicao e exclusao.
 - O CORS do backend deve permitir a origem do frontend, normalmente `http://localhost:5173`.
-- O projeto nao possui autenticacao, upload de imagens, comentarios ou avaliacoes.
+- O frontend possui autenticação preparada para cookies HttpOnly; o funcionamento depende da API. Upload de imagens, comentários e avaliações não estão implementados na interface.
 
 ## Desenvolvido
 

@@ -1,19 +1,13 @@
 import Medalha from "../components/Medalha";
 
-const niveis = [
-  { nivel: "Transparente", titulo: "Iniciante", faixa: "0 trilhas aprovadas", medalha: "transparente" },
-  { nivel: "Verde", titulo: "Explorador", faixa: "1 a 15 trilhas aprovadas", medalha: "verde" },
-  { nivel: "Bronze", titulo: "Aventureiro", faixa: "16 a 30 trilhas aprovadas", medalha: "bronze" },
-  { nivel: "Prata", titulo: "Desbravador", faixa: "31 a 49 trilhas aprovadas", medalha: "prata" },
-  { nivel: "Ouro", titulo: "Mestre das Trilhas", faixa: "50 ou mais trilhas aprovadas", medalha: "ouro" },
-];
+import { niveisMedalhas } from "../data/niveisMedalhas.js";
 
 function GuiaMedalhas() {
   return (
     <main className="productMain medalPage">
       <header className="productPageHeading"><span className="pageEyebrow">Sua jornada</span><h1>Guia de Medalhas</h1><p>Os níveis acompanham suas trilhas aprovadas.</p></header>
       <ol className="medalLevels">
-        {niveis.map(({ nivel, titulo, faixa, medalha }, index) => (
+        {niveisMedalhas.map(({ nivel, titulo, faixa, medalha }, index) => (
           <li className="medalLevel" key={nivel}>
             <Medalha nivel={medalha} className="medalArtwork" />
             <span className="medalLevelNumber">Nível {index + 1}</span>

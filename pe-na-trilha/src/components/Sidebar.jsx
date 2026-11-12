@@ -7,6 +7,7 @@ const links = [
   { to: "/trilhas", label: "Início", mobileLabel: "Início", icon: "home" },
   { to: "/perfil", label: "Perfil", mobileLabel: "Perfil", icon: "profile" },
   { to: "/trilhas/nova", label: "Nova publicação", mobileLabel: "Nova", icon: "plus" },
+  { to: "/ajuda", label: "Central de Ajuda", mobileLabel: "Ajuda", icon: "help" },
   { to: "/medalhas", label: "Guia de Medalhas", mobileLabel: "Medalhas", icon: "medal" },
 ];
 
@@ -50,7 +51,6 @@ function Sidebar() {
             <NavIcon name={icon} /><span className="productNavLabel">{label}</span><span className="productNavShortLabel">{mobileLabel}</span>
           </NavLink>
         ))}
-        <span className="productNavLink productNavInfo"><NavIcon name="help" />Central de ajuda</span>
         {usuario ? (
           <button className="productNavLink desktopAuthLink" type="button" onClick={sair}><NavIcon name="logout" />Sair</button>
         ) : (

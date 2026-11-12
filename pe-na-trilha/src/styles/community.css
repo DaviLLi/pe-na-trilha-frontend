@@ -1,0 +1,81 @@
+.clearAnswer {
+  min-height: 2.75rem;
+  padding: .45rem .25rem;
+  border: 0;
+  background: transparent;
+  color: var(--product-green-hover);
+  font: 600 .72rem var(--font-body);
+  text-decoration: underline;
+  text-underline-offset: .2em;
+  cursor: pointer;
+}
+.clearAnswer:hover:not(:disabled) { color: #a3ebcf; }
+.clearAnswer:disabled { color: var(--product-muted); opacity: .55; cursor: default; text-decoration: none; }
+.clearAnswer:focus-visible, .durationStepper button:focus-visible, .consentDocuments a:focus-visible,
+.readingPage a:focus-visible, .helpPage a:focus-visible, .helpFaq summary:focus-visible {
+  outline: 2px solid var(--product-green-hover);
+  outline-offset: 3px;
+}
+.durationPicker { min-width: 0; margin: .25rem 0 0; padding: 1rem; border: 1px solid var(--product-line); border-radius: var(--product-radius); background: #101b16; }
+.durationPicker legend { padding-inline: .35rem; color: var(--product-text); font-size: .85rem; font-weight: 700; }
+.durationPicker > p { margin: 0 0 1rem; color: var(--product-muted); font-size: .75rem; line-height: 1.6; }
+.durationControls { display: flex; flex-wrap: wrap; gap: 1rem 1.5rem; }
+.durationUnit { display: grid; gap: .5rem; }
+.durationUnitLabel { color: var(--product-muted); font-size: .65rem; font-weight: 800; letter-spacing: .12em; text-transform: uppercase; }
+.durationStepper { display: flex; align-items: center; gap: .4rem; }
+.durationStepper button { display: grid; width: 2.75rem; height: 2.75rem; padding: 0; place-items: center; border: 1px solid #355449; border-radius: .6rem; background: #172a21; color: #8ce4c1; font: 500 1.3rem var(--font-body); cursor: pointer; }
+.durationStepper button:hover:not(:disabled) { border-color: var(--product-green); background: #224333; }
+.durationStepper button:disabled { opacity: .4; cursor: default; }
+.durationStepper output { display: grid; min-width: 3.25rem; height: 2.75rem; box-sizing: border-box; place-items: center; border: 1px solid var(--product-line); border-radius: .6rem; background: var(--product-bg); color: var(--product-text); font: 600 1.2rem var(--font-display); font-variant-numeric: tabular-nums; }
+.durationFooter { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: .35rem; margin-top: .6rem; }
+.durationFooter > span { color: var(--product-muted); font-size: .7rem; }
+.fieldError { color: #f0aaa1; font-size: .75rem; line-height: 1.5; }
+.medalCount { color: var(--product-text); font-size: .8rem; }
+.medalProgress { display: grid; gap: .5rem; margin-top: .8rem; color: var(--product-muted); font-size: .72rem; }
+.medalProgress progress { width: 100%; height: .5rem; overflow: hidden; border: 0; border-radius: 1rem; background: var(--product-bg); accent-color: var(--product-green); }
+.medalProgress progress::-webkit-progress-bar { border-radius: 1rem; background: var(--product-bg); }
+.medalProgress progress::-webkit-progress-value { border-radius: 1rem; background: var(--product-green); }
+.medalProgress progress::-moz-progress-bar { border-radius: 1rem; background: var(--product-green); }
+.medalProgress small { line-height: 1.6; }
+.medalMax { color: var(--product-green-hover); font-size: .75rem; }
+.registrationConsent { margin-top: .4rem; padding: .9rem; border: 1px solid var(--product-line); border-radius: .75rem; background: rgba(7, 16, 14, .45); }
+.consentRow { display: flex; gap: .65rem; align-items: start; }
+.consentRow input { width: 1.15rem; height: 1.15rem; flex: 0 0 auto; margin: .15rem 0 0; accent-color: var(--product-green); }
+.consentRow input:focus-visible { outline: 2px solid var(--product-green-hover); outline-offset: 3px; }
+.consentRow label { color: var(--product-text); font-size: .78rem; line-height: 1.65; cursor: pointer; }
+.consentDocuments { display: flex; flex-wrap: wrap; gap: .25rem 1rem; margin-top: .65rem; }
+.consentDocuments a { display: inline-flex; align-items: center; min-height: 2.75rem; color: #70d5ae; font-size: .73rem; text-underline-offset: .2em; }
+.registrationConsent > p { margin: .4rem 0 0; color: var(--product-muted); font-size: .7rem; line-height: 1.65; }
+.registrationConsent > .fieldError { color: #f0aaa1; }
+.srOnly { position: absolute; width: 1px; height: 1px; padding: 0; margin: -1px; overflow: hidden; clip-path: inset(50%); white-space: nowrap; border: 0; }
+.helpPage, .readingPage { max-width: 1120px; margin-inline: auto; }
+.helpGrid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 1rem; }
+.helpCard, .readingSection { min-width: 0; padding: 1.25rem; border: 1px solid var(--product-line); border-radius: var(--product-radius); background: var(--product-panel); }
+.helpNumber { color: var(--product-green-hover); font: 600 .75rem var(--font-display); }
+.helpCard h2, .readingSection h2, .helpFaq h2 { color: var(--product-text); font: 600 1rem var(--font-display); line-height: 1.5; }
+.helpCard ul { padding-left: 1.1rem; }
+.helpCard li, .helpCard p, .helpFaq p, .readingSection p { color: var(--product-muted); font-size: .85rem; line-height: 1.85; }
+.helpCard li + li { margin-top: .6rem; }
+.helpCard strong { color: var(--product-text); }
+.helpPage a, .readingPage a { color: #70d5ae; text-underline-offset: .2em; }
+.helpPage a:hover, .readingPage a:hover { color: #a3ebcf; }
+.helpFaq { margin-top: 2rem; }
+.helpFaq details { margin-top: .6rem; border: 1px solid var(--product-line); border-radius: var(--product-radius); background: var(--product-panel); }
+.helpFaq summary { min-height: 2.75rem; box-sizing: border-box; padding: .9rem 1rem; color: var(--product-text); font-size: .85rem; line-height: 1.6; cursor: pointer; }
+.helpFaq details[open] summary { color: var(--product-green-hover); }
+.helpFaq p { margin: 0; padding: 0 1rem 1rem; }
+.readingPage { max-width: 920px; }
+.documentDraft { padding: 1rem 1.2rem; border: 1px solid #6c6342; border-radius: var(--product-radius); background: #242519; color: #e1d5a7; font-size: .8rem; line-height: 1.7; }
+.documentDraft p { margin: .3rem 0 0; }
+.documentIndex { display: grid; gap: .4rem; margin: 1.5rem 0; }
+.documentIndex a { width: fit-content; padding-block: .35rem; font-size: .8rem; }
+.readingSection { margin-bottom: .85rem; scroll-margin-top: 1rem; }
+.readingSection h2 { margin: 0 0 .7rem; }
+.readingSection p { margin: 0; overflow-wrap: anywhere; }
+.documentSources { color: var(--product-muted); font-size: .8rem; line-height: 1.8; }
+.readingFooter { display: flex; flex-wrap: wrap; gap: 1rem; margin-top: 1.5rem; font-size: .8rem; }
+@media (max-width: 860px) { .helpGrid { grid-template-columns: minmax(0, 1fr); } }
+@media (max-width: 640px) {
+  .helpCard, .readingSection { padding: 1rem; }
+  .readingSection { scroll-margin-top: 7.5rem; }
+}

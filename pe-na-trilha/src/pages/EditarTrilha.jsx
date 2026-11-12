@@ -1,3 +1,5 @@
+import { useAuth } from "../contexts/useAuth";
+import { obterPermissoesTrilha } from "../services/trilhaPermissoes.js";
 import { useEffect, useState } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import TrilhaForm from "../components/TrilhaForm";
@@ -8,6 +10,7 @@ import {
 } from "../services/trilhasService";
 
 function EditarTrilha() {
+  const { usuario } = useAuth();
   const { id } = useParams();
   const navigate = useNavigate();
   const [trilha, setTrilha] = useState(null);
@@ -31,6 +34,7 @@ function EditarTrilha() {
   }, [id]);
 
   const handleSubmit = async (dados) => {
+    if (!trilha || !obterPermissoesTrilha(trilha, usuario).editar) return;
     try {
       setEnviando(true);
       setErro("");
@@ -59,7 +63,9 @@ function EditarTrilha() {
 
         {carregando ? <p className='loadingText'>Carregando trilha...</p> : null}
 
-        {!carregando && trilha ? (
+        {!carregando && trilha && !obterPermissoesTrilha(trilha, usuario).editar ? <p role="status">A edição não está disponível para sua conta. A publicação precisa informar autoria ou permissão de edição.</p> : null}
+
+        {!carregando && trilha && obterPermissoesTrilha(trilha, usuario).editar ? (
           <TrilhaForm
             valoresIniciais={{
               titulo: trilha.titulo,

@@ -24,7 +24,7 @@ export function validarSenha(senha) {
   );
 }
 
-export function validarCadastro({ nomeCompleto, nomeUsuario, email, senha }) {
+export function validarCadastro({ nomeCompleto, nomeUsuario, email, senha, aceiteTermos }) {
   const erros = {};
 
   if (!nomeCompleto.trim()) {
@@ -39,6 +39,10 @@ export function validarCadastro({ nomeCompleto, nomeUsuario, email, senha }) {
   if (!validarSenha(senha)) {
     erros.senha =
       "Use 8 ou mais caracteres, com maiúscula, minúscula, número e símbolo, respeitando o limite de 72 bytes.";
+  }
+
+  if (aceiteTermos !== true) {
+    erros.aceiteTermos = "Leia e aceite os Termos de Uso para criar sua conta.";
   }
 
   return erros;
