@@ -72,24 +72,24 @@ pe-na-trilha-frontend/
 
 ## Rotas do frontend
 
-| Rota | Pagina |
-| --- | --- |
-| `/` | Pagina inicial |
-| `/trilhas` | Lista de trilhas |
-| `/trilhas/nova` | Cadastro de trilha |
-| `/trilhas/:id/editar` | Edicao de trilha |
-| `/sobre` | Sobre o projeto |
-| `/sprint-3` | Apresentacao da sprint |
+| Rota                  | Pagina                 |
+| --------------------- | ---------------------- |
+| `/`                   | Pagina inicial         |
+| `/trilhas`            | Lista de trilhas       |
+| `/trilhas/nova`       | Cadastro de trilha     |
+| `/trilhas/:id/editar` | Edicao de trilha       |
+| `/sobre`              | Sobre o projeto        |
+| `/sprint-3`           | Apresentacao da sprint |
 
 ## Rotas da API
 
-| Metodo | Rota | Acao |
-| --- | --- | --- |
-| `GET` | `/trilhas` | Lista todas as trilhas |
-| `GET` | `/trilhas/:id` | Busca uma trilha especifica |
-| `POST` | `/trilhas` | Cadastra uma nova trilha |
-| `PUT` | `/trilhas/:id` | Atualiza uma trilha |
-| `DELETE` | `/trilhas/:id` | Remove uma trilha |
+| Metodo   | Rota           | Acao                        |
+| -------- | -------------- | --------------------------- |
+| `GET`    | `/trilhas`     | Lista todas as trilhas      |
+| `GET`    | `/trilhas/:id` | Busca uma trilha especifica |
+| `POST`   | `/trilhas`     | Cadastra uma nova trilha    |
+| `PUT`    | `/trilhas/:id` | Atualiza uma trilha         |
+| `DELETE` | `/trilhas/:id` | Remove uma trilha           |
 
 ## Como configurar
 
@@ -209,9 +209,6 @@ DELETE /trilhas/:id
 - O CORS do backend deve permitir a origem do frontend, normalmente `http://localhost:5173`.
 - O projeto nao possui autenticacao, upload de imagens, comentarios ou avaliacoes.
 
-## Integrantes
+## Desenvolvido
 
 - Davi Martinelli Landal
-- Victor Schmitz Alvim de Oliveira
-- Hiago Farias Veloso
-- Hiuri Machado Cardozo
