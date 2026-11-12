@@ -3,6 +3,7 @@
 @import url("sidebar.css");
 @import url("post.css");
 @import url("newPost.css");
+@import url("auth.css");
 
 /* Importa fontes usadas no projeto */
 @import url("https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700;800&family=Sora:wght@600;700&display=swap");
