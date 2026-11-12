@@ -8,9 +8,12 @@ import Login from "./pages/Login";
 import CadastroUsuario from "./pages/CadastroUsuario";
 import Perfil from "./pages/Perfil";
 import GuiaMedalhas from "./pages/GuiaMedalhas";
+import Ajuda from "./pages/Ajuda";
+import DocumentoLegal from "./pages/DocumentoLegal";
 import Admin from "./pages/Admin";
 import { useAuth } from "./contexts/useAuth";
 import "./styles/style.css";
+import "./styles/community.css";
 
 function ApenasVisitantes({ children }) {
   const {
@@ -82,6 +85,9 @@ function App() {
         <Route path='/trilhas/nova' element={<RotaProtegida><CadastroTrilha /></RotaProtegida>} />
         <Route path='/trilhas/:id/editar' element={<RotaProtegida><EditarTrilha /></RotaProtegida>} />
         <Route path='/perfil' element={<RotaProtegida><Perfil /></RotaProtegida>} />
+        <Route path='/ajuda' element={<Ajuda />} />
+        <Route path='/termos' element={<DocumentoLegal tipo="termos" />} />
+        <Route path='/privacidade' element={<DocumentoLegal tipo="privacidade" />} />
         <Route path='/medalhas' element={<GuiaMedalhas />} />
         <Route path='/admin' element={<RotaProtegida><Admin /></RotaProtegida>} />
         <Route

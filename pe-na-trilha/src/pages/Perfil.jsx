@@ -1,8 +1,11 @@
+import MedalhaPerfil from "../components/MedalhaPerfil";
+import { calcularMedalha } from "../data/niveisMedalhas.js";
 import { Link } from "react-router-dom";
 import { useAuth } from "../contexts/useAuth";
 
 function Perfil() {
   const { usuario } = useAuth();
+  const conquista = calcularMedalha(usuario?.trilhasAprovadas);
   const nome = usuario?.nomeCompleto || "Nome não informado";
   const nomeUsuario = usuario?.nomeUsuario;
   const foto = usuario?.fotoPerfil || usuario?.avatarUrl || usuario?.foto || usuario?.imagemPerfil;
@@ -33,13 +36,10 @@ function Perfil() {
         <div className="profileInfoCard profileStats" aria-label="Publicações e aprovações">
           <span className="profileSectionLabel">Na trilha</span>
           <p><strong>—</strong><span>trilhas publicadas</span></p>
-          <p><strong>—</strong><span>trilhas aprovadas</span></p>
-          <small>A API ainda não associa publicações a um perfil nem informa aprovações.</small>
+          <p><strong>{conquista?.quantidade ?? "—"}</strong><span>trilhas aprovadas</span></p>
+          <small>As contagens aparecem quando são fornecidas pela sua conta.</small>
         </div>
-        <div className="profileInfoCard profileCurrentMedal">
-          <span className="profileSectionLabel">Nível atual</span>
-          <div className="profileMedalValue"><span className="profileMedalPending" aria-hidden="true">—</span><div><strong>Indisponível</strong><span>Progresso depende da contagem de trilhas aprovadas.</span></div></div>
-        </div>
+        <MedalhaPerfil quantidadeAprovada={usuario?.trilhasAprovadas} />
       </section>
 
       <section className="profilePosts" aria-labelledby="profile-posts-title">

@@ -1,3 +1,4 @@
+import { formatarDuracao } from "../services/publicacaoValidation.js";
 import { obterDetalhesTrilha, rotulosDetalhesTrilha } from "../data/detalhesTrilha.js";
 
 function RelogioIcone() {
@@ -11,7 +12,7 @@ function RelogioIcone() {
 
 function DetalhesTrilha({ trilha }) {
   const detalhes = obterDetalhesTrilha(trilha);
-  const duracao = typeof trilha?.duracao === "string" ? trilha.duracao.trim() : "";
+  const duracao = formatarDuracao(trilha?.duracao);
   if (detalhes.length === 0 && !duracao) return null;
 
   return (

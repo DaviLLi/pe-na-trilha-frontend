@@ -1,5 +1,7 @@
 import { useState } from "react";
 import { Link } from "react-router-dom";
+import DuracaoSeletor from "./DuracaoSeletor";
+import { alterarResposta, prepararPublicacao, validarPublicacao } from "../services/publicacaoValidation.js";
 import { caracteristicasPorLocal, perguntasTrilha } from "../data/detalhesTrilha.js";
 
 const camposVazios = { titulo: "", descricao: "", endereco: "" };
@@ -26,19 +28,21 @@ function TrilhaForm({
 }) {
   const [campos, setCampos] = useState(() => ({ ...camposVazios, ...valoresIniciais }));
   const [respostas, setRespostas] = useState(respostasVazias);
-  const [duracao, setDuracao] = useState("");
+  const [duracao, setDuracao] = useState(null);
+  const [erros, setErros] = useState({});
 
   const handleChange = (evento) => {
     const { name, value } = evento.target;
     setCampos((estadoAtual) => ({ ...estadoAtual, [name]: value }));
+    setErros((atuais) => {
+      const novos = { ...atuais };
+      delete novos[name];
+      return novos;
+    });
   };
 
   const handleRespostaChange = (chave, valor) => {
-    setRespostas((estadoAtual) => ({
-      ...estadoAtual,
-      [chave]: valor,
-      ...(chave === "tipoLocal" ? { caracteristicaPrincipal: "" } : {}),
-    }));
+    setRespostas((estadoAtual) => alterarResposta(estadoAtual, chave, valor));
   };
 
   const perguntas = incluirDetalhes
@@ -53,16 +57,18 @@ function TrilhaForm({
   const handleSubmit = (evento) => {
     evento.preventDefault();
     if (envioIndisponivel || !aoEnviar) return;
-    aoEnviar({
-      titulo: campos.titulo.trim(),
-      descricao: campos.descricao.trim(),
-      endereco: campos.endereco.trim(),
-      ...(incluirDetalhes ? { ...respostas, duracao: duracao.trim() } : {}),
-    });
+    const novosErros = validarPublicacao(campos, incluirDetalhes ? duracao : null);
+    setErros(novosErros);
+    if (Object.keys(novosErros).length) {
+      evento.currentTarget.querySelector(`#${Object.keys(novosErros)[0]}`)?.focus();
+      return;
+    }
+    aoEnviar(prepararPublicacao(campos, incluirDetalhes ? respostas : null, duracao));
   };
 
   return (
     <form className={`trilhaForm${incluirDetalhes ? " trailCreateForm" : ""}`} onSubmit={handleSubmit}>
+      {Object.keys(erros).length ? <div className="storageAlert" role="alert">{Object.values(erros).join(" ")}</div> : null}
       <div className="formField">
         <label htmlFor="titulo">Título <span className="requiredMark">Obrigatório</span></label>
         <input id="titulo" name="titulo" type="text" placeholder="Ex: Trilha da Pedra Grande ao amanhecer" aria-describedby="titulo-ajuda" value={campos.titulo} required autoComplete="off" disabled={enviando} onChange={handleChange} />
@@ -86,7 +92,7 @@ function TrilhaForm({
           <header className="trailDetailsHeading">
             <span className="pageEyebrow">Detalhes do percurso</span>
             <h2 id="trail-details-title">Conte como é o local</h2>
-            <p>Escolha uma opção em cada pergunta. A característica principal acompanha o tipo de local.</p>
+            <p>Responda apenas ao que desejar. Todas as perguntas são opcionais; a característica principal acompanha o tipo de local.</p>
           </header>
 
           <div className="trailQuestionsGrid">
@@ -106,7 +112,6 @@ function TrilhaForm({
                           name={`resposta-${chave}`}
                           value={opcao}
                           checked={respostas[chave] === opcao}
-                          required={opcaoIndice === 0}
                           disabled={enviando || aguardandoTipo}
                           onChange={() => handleRespostaChange(chave, opcao)}
                         />
@@ -115,15 +120,19 @@ function TrilhaForm({
                     );
                   })}
                 </div>
+                <button className="clearAnswer" type="button" aria-label={`Limpar resposta: ${titulo}`} disabled={enviando || !respostas[chave]} onClick={() => handleRespostaChange(chave, "")}>Limpar resposta</button>
               </fieldset>
             ))}
           </div>
 
-          <div className="formField durationField">
-            <label htmlFor="duracao">Tempo estimado <span className="optionalMark">Opcional</span></label>
-            <div className="durationInputWrap"><span aria-hidden="true">◷</span><input id="duracao" name="duracao" type="text" inputMode="text" placeholder="Ex: 1h30, 2 horas ou 3h30" value={duracao} disabled={enviando} onChange={(evento) => setDuracao(evento.target.value)} /></div>
-            <small>Informe o tempo estimado para percorrer o local.</small>
-          </div>
+          <DuracaoSeletor valor={duracao} aoAlterar={(valor) => {
+            setDuracao(valor);
+            setErros((atuais) => {
+              const novos = { ...atuais };
+              delete novos.duracao;
+              return novos;
+            });
+          }} desabilitado={enviando} erro={erros.duracao} />
         </section>
       ) : null}
 

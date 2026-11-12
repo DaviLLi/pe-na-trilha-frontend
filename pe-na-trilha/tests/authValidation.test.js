@@ -31,6 +31,7 @@ test("valida todos os campos do cadastro antes da requisição", () => {
       nomeUsuario: "Ana",
       email: "ana@example.com",
       senha: "Trilha123!",
+      aceiteTermos: true,
     }),
     {},
   );
@@ -42,6 +43,7 @@ test("valida todos os campos do cadastro antes da requisição", () => {
     senha: "curta",
   });
   assert.deepEqual(Object.keys(erros).sort(), [
+    "aceiteTermos",
     "email",
     "nomeCompleto",
     "nomeUsuario",

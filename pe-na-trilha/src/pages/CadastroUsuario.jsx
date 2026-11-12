@@ -2,7 +2,7 @@ import { useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import AuthShell from "../components/AuthShell";
 import { obterMensagemErro } from "../services/api";
-import { cadastrarUsuario } from "../services/authService";
+import { concluirCadastro } from "../services/cadastroFlow.js";
 import { validarCadastro } from "../services/authValidation";
 
 const camposIniciais = {
@@ -10,6 +10,7 @@ const camposIniciais = {
   nomeUsuario: "",
   email: "",
   senha: "",
+  aceiteTermos: false,
 };
 
 function CadastroUsuario() {
@@ -20,8 +21,8 @@ function CadastroUsuario() {
   const [enviando, setEnviando] = useState(false);
 
   const handleChange = (evento) => {
-    const { name, value } = evento.target;
-    setCampos((atuais) => ({ ...atuais, [name]: value }));
+    const { name, value, type, checked } = evento.target;
+    setCampos((atuais) => ({ ...atuais, [name]: type === "checkbox" ? checked : value }));
     setErrosCampos((atuais) => ({ ...atuais, [name]: "" }));
   };
 
@@ -31,20 +32,14 @@ function CadastroUsuario() {
     setErrosCampos(novosErros);
     setErro("");
 
-    if (Object.keys(novosErros).length > 0) return;
+    if (Object.keys(novosErros).length > 0) {
+      evento.currentTarget.elements.namedItem(Object.keys(novosErros)[0])?.focus();
+      return;
+    }
 
     setEnviando(true);
     try {
-      await cadastrarUsuario({
-        nomeCompleto: campos.nomeCompleto.trim(),
-        nomeUsuario: campos.nomeUsuario.trim(),
-        email: campos.email.trim(),
-        senha: campos.senha,
-      });
-      navigate("/login", {
-        replace: true,
-        state: { mensagem: "Cadastro concluído. Entre com sua nova conta." },
-      });
+      await concluirCadastro(campos, navigate);
     } catch (erroRequisicao) {
       setErro(obterMensagemErro(erroRequisicao));
     } finally {
@@ -143,6 +138,16 @@ function CadastroUsuario() {
             <small id="ajuda-senha">8+ caracteres, maiúscula, minúscula, número e símbolo. Até 72 bytes.</small>
           )}
         </label>
+
+        <div className="registrationConsent">
+          <div className="consentRow">
+            <input id="aceiteTermos" name="aceiteTermos" type="checkbox" checked={campos.aceiteTermos} onChange={handleChange} required disabled={enviando} aria-invalid={Boolean(errosCampos.aceiteTermos)} aria-describedby={errosCampos.aceiteTermos ? "erro-aceiteTermos" : "ajuda-aceite"} />
+            <label htmlFor="aceiteTermos">Li e concordo com os Termos de Uso e declaro que tive acesso à Política de Privacidade.</label>
+          </div>
+          <div className="consentDocuments"><Link to="/termos" target="_blank" rel="noopener noreferrer">Ler Termos de Uso ↗<span className="srOnly"> (abre em nova aba)</span></Link><Link to="/privacidade" target="_blank" rel="noopener noreferrer">Ler Política de Privacidade ↗<span className="srOnly"> (abre em nova aba)</span></Link></div>
+          <p id="ajuda-aceite">O aceite é dos termos. A política explica o uso dos dados e é apresentada para sua ciência. O registro definitivo do aceite ainda aguarda confirmação da integração.</p>
+          {errosCampos.aceiteTermos ? <p className="fieldError" id="erro-aceiteTermos" role="alert">{errosCampos.aceiteTermos}</p> : null}
+        </div>
 
         <button className="authSubmit" type="submit" disabled={enviando}>
           {enviando ? "Criando conta..." : "Criar minha conta"}
