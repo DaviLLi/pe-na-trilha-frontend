@@ -1,4 +1,6 @@
+import { useState } from "react";
 import { Link } from "react-router-dom";
+import DetalhesTrilha from "./DetalhesTrilha.jsx";
 
 function EditIcon() {
   return (
@@ -32,25 +34,14 @@ function TrashIcon() {
 
 function PostTrilha({ trilha, onDelete, excluindo }) {
   const fotoDestaque = trilha.fotos?.[0]?.url;
+  const [urlComFalha, setUrlComFalha] = useState(null);
+  const fotoFalhou = urlComFalha === fotoDestaque;
+  const mostrarFoto = Boolean(fotoDestaque) && !fotoFalhou;
 
   return (
     <article className='post'>
-      <div className={fotoDestaque ? "postPhoto" : "postPhoto postPhotoEmpty"}>
-        {fotoDestaque ? (
-          <img src={fotoDestaque} alt={`Paisagem da trilha ${trilha.titulo}`} />
-        ) : (
-          <span>Esta trilha ainda não tem fotos</span>
-        )}
-        {trilha.fotos?.length > 1 ? (
-          <span className='photoCount'>{trilha.fotos.length} fotos</span>
-        ) : null}
-      </div>
       <header className='postHeader'>
-        <div className='postCategory'>
-          <span className='trailGlyph' aria-hidden='true'>⌁</span>
-          <span>Percurso compartilhado</span>
-        </div>
-
+        <h2 className='postTitle'>{trilha.titulo}</h2>
         <div className='actionButtons'>
           <Link
             className='editBtn'
@@ -74,7 +65,6 @@ function PostTrilha({ trilha, onDelete, excluindo }) {
       </header>
 
       <div className='postContent'>
-        <h2 className='postTitle'>{trilha.titulo}</h2>
         <p className='postText'>{trilha.descricao}</p>
         <div className='postAddress'>
           <svg viewBox='0 0 24 24' aria-hidden='true'>
@@ -83,7 +73,26 @@ function PostTrilha({ trilha, onDelete, excluindo }) {
           </svg>
           <span>{trilha.endereco}</span>
         </div>
+        <DetalhesTrilha trilha={trilha} />
       </div>
+
+      <figure className={mostrarFoto ? "postPhoto" : "postPhoto postPhotoEmpty"}>
+        {mostrarFoto ? (
+          <img
+            src={fotoDestaque}
+            alt={`Paisagem da trilha ${trilha.titulo}`}
+            width="1600"
+            height="800"
+            loading="lazy"
+            onError={() => setUrlComFalha(fotoDestaque)}
+          />
+        ) : (
+          <figcaption>{fotoFalhou ? "Foto indisponível" : "Nenhuma foto cadastrada"}</figcaption>
+        )}
+        {mostrarFoto && trilha.fotos?.length > 1 ? (
+          <span className='photoCount'>{trilha.fotos.length} fotos</span>
+        ) : null}
+      </figure>
     </article>
   );
 }

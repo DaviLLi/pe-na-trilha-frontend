@@ -5,8 +5,6 @@ import logo from "../assets/logo.png";
 
 const navItems = [
   { path: "/trilhas", label: "Trilhas" },
-  { path: "/sobre", label: "Sobre" },
-  { path: "/sprint-3", label: "Sprint 3" },
 ];
 
 function Header() {

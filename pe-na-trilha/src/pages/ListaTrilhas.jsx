@@ -1,8 +1,7 @@
 import axios from "axios";
 import { useEffect, useMemo, useState } from "react";
+import { Link } from "react-router-dom";
 import PostTrilha from "../components/PostTrilha";
-import Sidebar from "../components/Sidebar";
-import { useAuth } from "../contexts/useAuth";
 import { obterMensagemErro } from "../services/api";
 import {
   excluirTrilha,
@@ -15,7 +14,6 @@ function ListaTrilhas() {
   const [erro, setErro] = useState("");
   const [idExcluindo, setIdExcluindo] = useState("");
   const [busca, setBusca] = useState("");
-  const { usuario } = useAuth();
 
   const trilhasFiltradas = useMemo(() => {
     const termo = busca.trim().toLocaleLowerCase("pt-BR");
@@ -73,8 +71,6 @@ function ListaTrilhas() {
 
   return (
     <main className='layout feedPage'>
-      <Sidebar trilhaCount={trilhas.length} usuario={usuario} />
-
       <section className='feed' aria-live='polite'>
         <div className='feedIntro'>
           <div>
@@ -129,6 +125,16 @@ function ListaTrilhas() {
           />
         ))}
       </section>
+      <aside className="feedAside">
+        <section className="guideCard" aria-labelledby="guide-title">
+          <span className="guideCardIcon" aria-hidden="true">✳</span>
+          <div>
+            <h2 id="guide-title">Guia de Medalhas</h2>
+            <p>Conheça os níveis e critérios de progressão do Pé na Trilha.</p>
+          </div>
+          <Link to="/medalhas">Ver níveis <span aria-hidden="true">↗</span></Link>
+        </section>
+      </aside>
     </main>
   );
 }
