@@ -1,147 +1,272 @@
-.layout {
-  /* Estrutura principal: sidebar + feed */
-  display: flex;
+.layout.feedPage {
+  box-sizing: border-box;
+  display: grid;
+  grid-template-columns: 250px minmax(0, 1fr);
+  align-items: start;
   gap: 2rem;
-  width: min(1120px, calc(100% - 3rem));
-  margin: 0 auto;
-  align-items: flex-start;
+  width: 100%;
+  min-height: calc(100vh - 9rem);
+  margin: -9rem auto 0;
+  padding: 8rem max(1.5rem, calc((100% - 1180px) / 2)) 4rem;
+  background:
+    radial-gradient(ellipse at 86% 0%, rgba(0, 179, 126, 0.07), transparent 28rem),
+    #f5f8f6;
 }
 
 .feed {
-  /* Coluna onde os posts aparecem */
-  flex: 1;
   display: flex;
-  flex-direction: column;
-  gap: 1.5rem;
-  margin-left: 18rem;
+  min-width: 0;
   min-height: 320px;
+  flex-direction: column;
+  gap: 1.15rem;
+}
+
+.feedIntro {
+  display: flex;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: 1.5rem;
+  margin: 0 0 0.5rem;
+  padding: 0.15rem 0 0.55rem;
+}
+
+.feedEyebrow {
+  color: #00875f;
+  font-size: 0.74rem;
+  font-weight: 800;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+}
+
+.feedIntro h1 {
+  margin: 0.45rem 0 0;
+  color: #183c30;
+  font-family: var(--font-display);
+  font-size: clamp(1.65rem, 3vw, 2.3rem);
+  letter-spacing: -0.055em;
+  line-height: 1.12;
+}
+
+.feedIntro p {
+  margin: 0.55rem 0 0;
+  color: #738178;
+  font-size: 0.95rem;
+  line-height: 1.55;
+}
+
+.trailSearch {
+  display: flex;
+  width: min(19rem, 40%);
+  min-height: 2.9rem;
+  flex-shrink: 0;
+  align-items: center;
+  gap: 0.55rem;
+  padding: 0 0.9rem;
+  border: 1px solid #e1ebe5;
+  border-radius: 13px;
+  background: #fff;
+  box-shadow: 0 4px 14px rgba(25, 62, 46, 0.035);
+}
+
+.searchIcon {
+  color: #00875f;
+  font-size: 1.6rem;
+  line-height: 1;
+  transform: rotate(-20deg);
+}
+
+.trailSearch input {
+  width: 100%;
+  min-width: 0;
+  border: 0;
+  outline: 0;
+  background: transparent;
+  color: #183c30;
+  font: 500 0.85rem var(--font-body);
+}
+
+.trailSearch input::placeholder {
+  color: #99a69f;
+}
+
+.trailSearch:focus-within {
+  border-color: #00a875;
+  box-shadow: 0 0 0 3px rgba(0, 135, 95, 0.1);
 }
 
 .post {
-  /* Card individual de cada trilha */
-  background:
-    linear-gradient(180deg, rgba(35, 37, 43, 0.98), rgba(29, 31, 36, 0.98));
-  border: 1px solid var(--color-border-soft);
-  border-radius: 20px;
-  padding: 1.4rem;
-  color: var(--color-white-1);
-  box-shadow:
-    0 24px 60px rgba(0, 0, 0, 0.24),
-    inset 0 1px 0 rgba(255, 255, 255, 0.03);
+  position: relative;
   display: flex;
   flex-direction: column;
-  align-items: flex-start;
-  gap: 1rem;
+  gap: 1.05rem;
+  overflow: hidden;
+  padding: 1.35rem 1.5rem 1.45rem;
+  border: 1px solid #e5ede8;
+  border-radius: 19px;
+  background: #fff;
+  color: #263d33;
+  box-shadow: 0 8px 25px rgba(25, 62, 46, 0.045);
+  transition: box-shadow 180ms ease, transform 180ms ease;
+}
+
+.postPhoto {
+  position: relative;
+  display: grid;
+  min-height: 190px;
+  max-height: 280px;
+  overflow: hidden;
+  place-items: center;
+  margin: -1.35rem -1.5rem 0 -1.5rem;
+  background: #e8f3ed;
+}
+
+.postPhoto img {
+  display: block;
+  width: 100%;
+  max-height: 280px;
+  aspect-ratio: 16 / 7;
+  object-fit: cover;
+}
+
+.postPhotoEmpty {
+  min-height: 112px;
+  background:
+    radial-gradient(ellipse at 78% 110%, rgba(0, 179, 126, 0.2), transparent 38%),
+    linear-gradient(135deg, #eef7f2, #e2f0e8);
+  color: #668174;
+  font-size: 0.8rem;
+  font-weight: 700;
+}
+
+.photoCount {
+  position: absolute;
+  right: 0.8rem;
+  bottom: 0.8rem;
+  padding: 0.35rem 0.65rem;
+  border: 1px solid rgba(255, 255, 255, 0.45);
+  border-radius: 999px;
+  background: rgba(24, 60, 48, 0.78);
+  color: #fff;
+  font-size: 0.72rem;
+  font-weight: 800;
+  backdrop-filter: blur(8px);
+}
+
+.post:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 15px 32px rgba(25, 62, 46, 0.09);
+}
+
+.post::before {
+  position: absolute;
+  inset: 0 auto 0 0;
+  width: 4px;
+  background: linear-gradient(180deg, #00b37e, #00875f);
+  content: "";
 }
 
 .postHeader {
-  /* Cabeçalho do card: autor à esquerda, ações à direita */
   display: flex;
-  align-items: flex-start;
+  width: 100%;
+  align-items: center;
   justify-content: space-between;
   gap: 1rem;
-  width: 100%;
 }
 
-.profileGroup {
-  /* Agrupa avatar e dados do usuário */
+.postCategory {
   display: flex;
   align-items: center;
-  gap: 1rem;
+  gap: 0.5rem;
+  color: #718078;
+  font-size: 0.75rem;
+  font-weight: 700;
+  letter-spacing: 0.025em;
 }
 
-.avatarWithBorderPost {
-  /* Moldura do avatar dentro do post */
-  width: 58px;
-  height: 58px;
-  border-radius: 14px;
-  border: 3px solid var(--color-gray-3);
-  outline: 3px solid var(--color-green-2);
-  overflow: hidden;
-  flex-shrink: 0;
+.trailGlyph {
+  display: grid;
+  width: 1.65rem;
+  height: 1.65rem;
+  place-items: center;
+  border-radius: 9px;
+  background: #eaf6f0;
+  color: #00875f;
+  font-size: 1.2rem;
 }
 
-.avatarPost {
-  /* Imagem do avatar */
-  width: 100%;
-  height: 100%;
-  object-fit: cover;
-  border-radius: 10px;
-}
-
-.userInfo {
-  /* Bloco com nome e papel do usuário */
+.postContent {
   display: flex;
   flex-direction: column;
-  justify-content: center;
-  gap: 0.18rem;
-}
-
-.userInfo h2 {
-  margin: 0;
-  font-size: 1.1rem;
-  font-weight: 700;
-  font-family: var(--font-display);
-}
-
-.userInfo span {
-  color: var(--color-gray-2);
-  font-size: 0.92rem;
-}
-
-.postText {
-  /* Descrição da trilha */
-  margin: 0;
-  color: var(--color-white-1);
-  font-size: 1rem;
-  line-height: 1.7;
+  align-items: flex-start;
+  gap: 0.65rem;
 }
 
 .postTitle {
-  /* Título principal do post */
   margin: 0;
-  color: var(--color-white-1);
-  font-size: 1.6rem;
-  line-height: 1.15;
+  color: #183c30;
   font-family: var(--font-display);
+  font-size: 1.35rem;
+  letter-spacing: -0.035em;
+  line-height: 1.25;
+}
+
+.postText {
+  display: -webkit-box;
+  overflow: hidden;
+  margin: 0;
+  color: #65746c;
+  font-size: 0.92rem;
+  line-height: 1.7;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 3;
 }
 
 .postAddress {
-  /* Endereço/local da trilha */
-  margin: 0;
-  color: var(--color-green-2);
-  font-size: 0.92rem;
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+  margin-top: 0.2rem;
+  color: #007c57;
+  font-size: 0.82rem;
+  font-weight: 700;
+  line-height: 1.45;
+}
+
+.postAddress svg {
+  width: 1rem;
+  height: 1rem;
+  flex: 0 0 auto;
+  fill: none;
+  stroke: currentColor;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+  stroke-width: 1.7;
 }
 
 .actionButtons {
-  /* Área reservada para botões de ação do card */
   display: flex;
+  gap: 0.25rem;
 }
 
 .actionButtons button,
 .actionButtons a {
-  /* Botão circular da lixeira */
-  width: 2.5rem;
-  height: 2.5rem;
-  border-radius: 999px;
+  display: flex;
+  box-sizing: border-box;
+  width: 2.25rem;
+  height: 2.25rem;
+  align-items: center;
+  justify-content: center;
+  padding: 0.48rem;
   border: 1px solid transparent;
+  border-radius: 10px;
   background: transparent;
   cursor: pointer;
-  padding: 0.45rem;
-  display: flex;
-  justify-content: center;
-  align-items: center;
-  box-sizing: border-box;
-  transition:
-    transform 0.2s ease,
-    color 0.2s ease,
-    background-color 0.2s ease,
-    border-color 0.2s ease;
+  transition: background-color 160ms ease, color 160ms ease;
 }
 
 .actionButtons button:hover,
 .actionButtons a:hover {
-  transform: translateY(-1px);
+  background: #f0f7f3;
 }
 
 .deleteBtn svg,
@@ -151,18 +276,11 @@
 }
 
 .editBtn {
-  color: var(--color-green-1);
-}
-
-.editBtn:hover {
-  color: var(--color-white-1);
-  background: rgba(0, 179, 126, 0.1);
-  border-color: rgba(0, 179, 126, 0.24);
+  color: #00875f;
 }
 
 .deleteBtn {
-  /* Cor padrão do botão de apagar */
-  color: var(--color-red-2);
+  color: #bf5146;
 }
 
 .deleteBtn:disabled {
@@ -170,64 +288,104 @@
   opacity: 0.5;
 }
 
-.deleteBtn:hover {
-  /* Destaque visual quando passa o mouse */
-  color: var(--color-red-1);
-  background: rgba(244, 67, 54, 0.08);
-  border-color: rgba(244, 67, 54, 0.18);
-}
-
 .emptyFeed {
-  /* Card mostrado quando ainda não existem posts */
   display: flex;
   flex-direction: column;
   gap: 0.45rem;
   padding: 2rem;
-  border: 1px dashed rgba(0, 179, 126, 0.35);
-  border-radius: 20px;
-  background: rgba(32, 32, 36, 0.55);
-  color: var(--color-gray-2);
+  border: 1px dashed #a9cbbb;
+  border-radius: 18px;
+  background: #fff;
+  color: #74837a;
 }
 
 .emptyFeed strong {
-  /* Destaque do texto principal do estado vazio */
-  color: var(--color-white-1);
+  color: #183c30;
   font-family: var(--font-display);
-  font-size: 1.1rem;
+  font-size: 1.05rem;
 }
 
 .storageAlert {
   padding: 1rem 1.1rem;
-  border: 1px solid rgba(244, 67, 54, 0.35);
-  border-radius: 16px;
-  background: rgba(244, 67, 54, 0.1);
-  color: #ffb4ad;
+  border: 1px solid #f0c8c2;
+  border-radius: 14px;
+  background: #fff5f3;
+  color: #9f3c32;
   line-height: 1.5;
 }
 
-@media (max-width: 768px) {
-  .layout {
-    /* Reduz a largura total no tablet/mobile */
-    width: calc(100% - 2rem);
+@media (max-width: 900px) {
+  .layout.feedPage {
+    grid-template-columns: 215px minmax(0, 1fr);
+    gap: 1.2rem;
+    padding-inline: 1.25rem;
+  }
+
+  .sidebar {
+    width: 215px;
+    flex-basis: 215px;
+  }
+
+  .feedIntro {
+    align-items: stretch;
+    flex-direction: column;
+    gap: 1rem;
+  }
+
+  .trailSearch {
+    width: auto;
+  }
+}
+
+@media (max-width: 680px) {
+  .layout.feedPage {
+    display: flex;
+    min-height: calc(100vh - 9.5rem);
+    flex-direction: column;
+    gap: 1rem;
+    margin-top: -9.5rem;
+    padding: 7rem 1rem 2.5rem;
   }
 
   .feed {
-    /* Remove deslocamento lateral que existe por causa da sidebar fixa */
-    margin-left: 0;
+    width: 100%;
+    gap: 0.85rem;
+  }
+
+  .layout.feedPage .sidebar {
+    width: 100%;
+    flex-basis: auto;
+  }
+
+  .feedIntro {
+    gap: 0.85rem;
+    margin-bottom: 0.15rem;
+  }
+
+  .feedIntro h1 {
+    font-size: 1.7rem;
+  }
+
+  .feedIntro p {
+    font-size: 0.87rem;
   }
 
   .post {
-    /* Card um pouco mais compacto */
-    padding: 1.2rem;
+    gap: 0.85rem;
+    padding: 1.1rem 1rem 1.2rem 1.2rem;
+    border-radius: 16px;
   }
 
-  .postHeader {
-    /* Melhora alinhamento interno em telas menores */
-    align-items: center;
+  .postPhoto {
+    min-height: 150px;
+    margin: -1.1rem -1rem 0 -1.2rem;
+  }
+
+  .postPhotoEmpty {
+    min-height: 96px;
   }
 
   .postTitle {
-    /* Título menor no mobile */
-    font-size: 1.35rem;
+    font-size: 1.17rem;
   }
 }

@@ -1,4 +1,6 @@
+import { useState } from "react";
 import { Link } from "react-router-dom";
+import DetalhesTrilha from "./DetalhesTrilha.jsx";
 
 function EditIcon() {
   return (
@@ -31,24 +33,15 @@ function TrashIcon() {
 }
 
 function PostTrilha({ trilha, onDelete, excluindo }) {
+  const fotoDestaque = trilha.fotos?.[0]?.url;
+  const [urlComFalha, setUrlComFalha] = useState(null);
+  const fotoFalhou = urlComFalha === fotoDestaque;
+  const mostrarFoto = Boolean(fotoDestaque) && !fotoFalhou;
+
   return (
     <article className='post'>
       <header className='postHeader'>
-        <div className='profileGroup'>
-          <div className='avatarWithBorderPost'>
-            <img
-              src='https://github.com/DaviLLi.png'
-              className='avatarPost'
-              alt='Foto de Davi Martinelli'
-            />
-          </div>
-
-          <div className='userInfo'>
-            <h2>Davi Martinelli</h2>
-            <span>Trilheiro</span>
-          </div>
-        </div>
-
+        <h2 className='postTitle'>{trilha.titulo}</h2>
         <div className='actionButtons'>
           <Link
             className='editBtn'
@@ -71,9 +64,35 @@ function PostTrilha({ trilha, onDelete, excluindo }) {
         </div>
       </header>
 
-      <h3 className='postTitle'>{trilha.titulo}</h3>
-      <p className='postText'>{trilha.descricao}</p>
-      <span className='postAddress'>{trilha.endereco}</span>
+      <div className='postContent'>
+        <p className='postText'>{trilha.descricao}</p>
+        <div className='postAddress'>
+          <svg viewBox='0 0 24 24' aria-hidden='true'>
+            <path d='M19 10c0 5-7 11-7 11S5 15 5 10a7 7 0 1 1 14 0Z' />
+            <circle cx='12' cy='10' r='2.2' />
+          </svg>
+          <span>{trilha.endereco}</span>
+        </div>
+        <DetalhesTrilha trilha={trilha} />
+      </div>
+
+      <figure className={mostrarFoto ? "postPhoto" : "postPhoto postPhotoEmpty"}>
+        {mostrarFoto ? (
+          <img
+            src={fotoDestaque}
+            alt={`Paisagem da trilha ${trilha.titulo}`}
+            width="1600"
+            height="800"
+            loading="lazy"
+            onError={() => setUrlComFalha(fotoDestaque)}
+          />
+        ) : (
+          <figcaption>{fotoFalhou ? "Foto indisponível" : "Nenhuma foto cadastrada"}</figcaption>
+        )}
+        {mostrarFoto && trilha.fotos?.length > 1 ? (
+          <span className='photoCount'>{trilha.fotos.length} fotos</span>
+        ) : null}
+      </figure>
     </article>
   );
 }

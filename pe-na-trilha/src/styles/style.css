@@ -4,6 +4,7 @@
 @import url("post.css");
 @import url("newPost.css");
 @import url("auth.css");
+@import "./product.css";
 
 /* Importa fontes usadas no projeto */
 @import url("https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700;800&family=Sora:wght@600;700&display=swap");
@@ -36,22 +37,15 @@ body {
   font-family: var(--font-body);
   min-height: 100vh;
 
-  /* Fundo com degradê escuro e toque de verde no topo */
+  /* Base única usada pelo feed e pelas telas internas. */
   background:
-    radial-gradient(circle at top, rgba(0, 179, 126, 0.14), transparent 24rem),
-    linear-gradient(
-      180deg,
-      #050607 0%,
-      #0b0f0d 30%,
-      #101614 68%,
-      #16312b 100%
-    );
+    radial-gradient(ellipse at 86% 105%, rgba(44, 189, 142, 0.12), transparent 42%),
+    #07100e;
 
   /* Faz o fundo ficar "preso" enquanto o conteúdo rola */
   background-attachment: fixed;
 
-  /* Cria espaço para o header fixo não cobrir o conteúdo */
-  padding-top: 9rem;
+  padding: 0;
   color: var(--color-white-1);
 }
 
@@ -143,12 +137,6 @@ body {
 }
 
 @media (max-width: 480px) {
-  body {
-    /* No mobile eu só reduzo o espaço do topo */
-    min-height: 100vh;
-    padding-top: 9.5rem;
-  }
-
   .contentPage {
     width: calc(100% - 2rem);
   }
