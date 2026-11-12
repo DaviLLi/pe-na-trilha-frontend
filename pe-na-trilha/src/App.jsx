@@ -12,8 +12,45 @@ import { useAuth } from "./contexts/useAuth";
 import "./styles/style.css";
 
 function ApenasVisitantes({ children }) {
-  const { autenticado } = useAuth();
+  const {
+    autenticado,
+    carregandoSessao,
+    erroRestauracao,
+    tentarRestaurarSessao,
+  } = useAuth();
+  if (carregandoSessao) return null;
+  if (erroRestauracao) {
+    return <SessaoTemporariamenteIndisponivel tentarNovamente={tentarRestaurarSessao} />;
+  }
   return autenticado ? <Navigate to="/trilhas" replace /> : children;
+}
+
+function SessaoTemporariamenteIndisponivel({ tentarNovamente }) {
+  return (
+    <main role="status" className="formPage">
+      <section className="formCard">
+        <p>Não foi possível verificar sua sessão agora.</p>
+        <button type="button" onClick={tentarNovamente}>
+          Tentar novamente
+        </button>
+      </section>
+    </main>
+  );
+}
+
+function RotaProtegida({ children }) {
+  const {
+    autenticado,
+    carregandoSessao,
+    erroRestauracao,
+    tentarRestaurarSessao,
+  } = useAuth();
+  const location = useLocation();
+  if (carregandoSessao) return null;
+  if (erroRestauracao) {
+    return <SessaoTemporariamenteIndisponivel tentarNovamente={tentarRestaurarSessao} />;
+  }
+  return autenticado ? children : <Navigate to="/login" replace state={{ from: location }} />;
 }
 
 function App() {
@@ -27,8 +64,8 @@ function App() {
       <Routes>
         <Route path='/' element={<Home />} />
         <Route path='/trilhas' element={<ListaTrilhas />} />
-        <Route path='/trilhas/nova' element={<CadastroTrilha />} />
-        <Route path='/trilhas/:id/editar' element={<EditarTrilha />} />
+        <Route path='/trilhas/nova' element={<RotaProtegida><CadastroTrilha /></RotaProtegida>} />
+        <Route path='/trilhas/:id/editar' element={<RotaProtegida><EditarTrilha /></RotaProtegida>} />
         <Route path='/sobre' element={<About />} />
         <Route path='/sprint-3' element={<Presentation />} />
         <Route

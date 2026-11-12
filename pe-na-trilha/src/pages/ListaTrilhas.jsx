@@ -1,7 +1,8 @@
 import axios from "axios";
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import PostTrilha from "../components/PostTrilha";
 import Sidebar from "../components/Sidebar";
+import { useAuth } from "../contexts/useAuth";
 import { obterMensagemErro } from "../services/api";
 import {
   excluirTrilha,
@@ -13,6 +14,19 @@ function ListaTrilhas() {
   const [carregando, setCarregando] = useState(true);
   const [erro, setErro] = useState("");
   const [idExcluindo, setIdExcluindo] = useState("");
+  const [busca, setBusca] = useState("");
+  const { usuario } = useAuth();
+
+  const trilhasFiltradas = useMemo(() => {
+    const termo = busca.trim().toLocaleLowerCase("pt-BR");
+    if (!termo) return trilhas;
+
+    return trilhas.filter((trilha) =>
+      [trilha.titulo, trilha.descricao, trilha.endereco]
+        .filter(Boolean)
+        .some((valor) => valor.toLocaleLowerCase("pt-BR").includes(termo)),
+    );
+  }, [busca, trilhas]);
 
   useEffect(() => {
     const controller = new AbortController();
@@ -58,10 +72,28 @@ function ListaTrilhas() {
   };
 
   return (
-    <main className='layout'>
-      <Sidebar trilhaCount={trilhas.length} />
+    <main className='layout feedPage'>
+      <Sidebar trilhaCount={trilhas.length} usuario={usuario} />
 
       <section className='feed' aria-live='polite'>
+        <div className='feedIntro'>
+          <div>
+            <span className='feedEyebrow'>Explore ao ar livre</span>
+            <h1>Encontre sua próxima trilha</h1>
+            <p>Inspire-se com percursos compartilhados pela comunidade.</p>
+          </div>
+          <label className='trailSearch'>
+            <span className='searchIcon' aria-hidden='true'>⌕</span>
+            <input
+              type='search'
+              value={busca}
+              onChange={(evento) => setBusca(evento.target.value)}
+              placeholder='Buscar por trilha ou local'
+              aria-label='Buscar trilhas por título, descrição ou endereço'
+            />
+          </label>
+        </div>
+
         {erro ? (
           <div className='storageAlert' role='alert'>
             {erro}
@@ -81,7 +113,14 @@ function ListaTrilhas() {
           </div>
         ) : null}
 
-        {trilhas.map((trilha) => (
+        {!carregando && trilhas.length > 0 && trilhasFiltradas.length === 0 ? (
+          <div className='emptyFeed'>
+            <strong>Nenhum resultado para “{busca}”.</strong>
+            <span>Tente buscar por outro nome ou local.</span>
+          </div>
+        ) : null}
+
+        {trilhasFiltradas.map((trilha) => (
           <PostTrilha
             key={trilha._id}
             trilha={trilha}

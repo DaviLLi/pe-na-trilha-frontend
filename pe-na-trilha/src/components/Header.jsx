@@ -1,4 +1,6 @@
 import { NavLink } from "react-router-dom";
+import { useState } from "react";
+import { useAuth } from "../contexts/useAuth";
 import logo from "../assets/logo.png";
 
 const navItems = [
@@ -8,6 +10,17 @@ const navItems = [
 ];
 
 function Header() {
+  const { autenticado, usuario, logout } = useAuth();
+  const [erroLogout, setErroLogout] = useState("");
+
+  const handleLogout = async () => {
+    setErroLogout("");
+    try {
+      await logout();
+    } catch {
+      setErroLogout("Não foi possível encerrar a sessão. Tente novamente.");
+    }
+  };
   return (
     <header className='header'>
       <NavLink className='brand' to='/trilhas' aria-label='Ir para as trilhas'>
@@ -29,7 +42,15 @@ function Header() {
             {item.label}
           </NavLink>
         ))}
+        {autenticado ? (
+          <button className='navLink' type='button' onClick={handleLogout}>
+            Sair{usuario?.nomeUsuario ? ` (${usuario.nomeUsuario})` : ""}
+          </button>
+        ) : (
+          <NavLink className='navLink' to='/login'>Entrar</NavLink>
+        )}
       </nav>
+      {erroLogout ? <span role='alert'>{erroLogout}</span> : null}
     </header>
   );
 }

@@ -31,22 +31,24 @@ function TrashIcon() {
 }
 
 function PostTrilha({ trilha, onDelete, excluindo }) {
+  const fotoDestaque = trilha.fotos?.[0]?.url;
+
   return (
     <article className='post'>
+      <div className={fotoDestaque ? "postPhoto" : "postPhoto postPhotoEmpty"}>
+        {fotoDestaque ? (
+          <img src={fotoDestaque} alt={`Paisagem da trilha ${trilha.titulo}`} />
+        ) : (
+          <span>Esta trilha ainda não tem fotos</span>
+        )}
+        {trilha.fotos?.length > 1 ? (
+          <span className='photoCount'>{trilha.fotos.length} fotos</span>
+        ) : null}
+      </div>
       <header className='postHeader'>
-        <div className='profileGroup'>
-          <div className='avatarWithBorderPost'>
-            <img
-              src='https://github.com/DaviLLi.png'
-              className='avatarPost'
-              alt='Foto de Davi Martinelli'
-            />
-          </div>
-
-          <div className='userInfo'>
-            <h2>Davi Martinelli</h2>
-            <span>Trilheiro</span>
-          </div>
+        <div className='postCategory'>
+          <span className='trailGlyph' aria-hidden='true'>⌁</span>
+          <span>Percurso compartilhado</span>
         </div>
 
         <div className='actionButtons'>
@@ -71,9 +73,17 @@ function PostTrilha({ trilha, onDelete, excluindo }) {
         </div>
       </header>
 
-      <h3 className='postTitle'>{trilha.titulo}</h3>
-      <p className='postText'>{trilha.descricao}</p>
-      <span className='postAddress'>{trilha.endereco}</span>
+      <div className='postContent'>
+        <h2 className='postTitle'>{trilha.titulo}</h2>
+        <p className='postText'>{trilha.descricao}</p>
+        <div className='postAddress'>
+          <svg viewBox='0 0 24 24' aria-hidden='true'>
+            <path d='M19 10c0 5-7 11-7 11S5 15 5 10a7 7 0 1 1 14 0Z' />
+            <circle cx='12' cy='10' r='2.2' />
+          </svg>
+          <span>{trilha.endereco}</span>
+        </div>
+      </div>
     </article>
   );
 }
