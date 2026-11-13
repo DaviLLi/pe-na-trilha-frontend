@@ -222,6 +222,18 @@ button, a, input, textarea { touch-action: manipulation; }
   background: #101815;
 }
 .postPhoto img { width: 100%; height: 100%; max-height: none; aspect-ratio: inherit; object-fit: cover; }
+.postPhotoStatus {
+  position: absolute;
+  inset: 0;
+  display: grid;
+  place-items: center;
+  margin: 0;
+  padding: 1rem;
+  background: #101815;
+  color: #9fb5a9;
+  font-size: 0.74rem;
+}
+.postPhoto[aria-busy="true"] img { opacity: 0; }
 .postPhotoEmpty {
   display: grid;
   min-height: 4rem;
