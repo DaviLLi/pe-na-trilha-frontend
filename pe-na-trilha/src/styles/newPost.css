@@ -69,7 +69,7 @@
   border-radius: 999px;
   background: rgba(0, 179, 126, 0.12);
   color: var(--color-green-1);
-  font-size: 0.76rem;
+  font-size: 0.874rem;
   font-weight: 700;
   letter-spacing: 0.08em;
   text-transform: uppercase;
@@ -78,7 +78,7 @@
 .modalHeader h2 {
   /* Título principal do modal */
   margin: 0;
-  font-size: clamp(1.85rem, 3vw, 2.2rem);
+  font-size: clamp(2.1275rem, 3.45vw, 2.53rem);
   font-weight: 700;
   line-height: 1.1;
 }
@@ -89,7 +89,7 @@
   max-width: 28rem;
   color: var(--color-gray-2);
   font-family: var(--font-body);
-  font-size: 0.98rem;
+  font-size: 1.127rem;
   line-height: 1.5;
 }
 
@@ -120,7 +120,7 @@
 .modalHeader h1 {
   margin: 0;
   font-family: var(--font-display);
-  font-size: clamp(1.85rem, 3vw, 2.2rem);
+  font-size: clamp(2.1275rem, 3.45vw, 2.53rem);
 }
 
 .formField {
@@ -134,7 +134,7 @@
   /* Rótulo do campo */
   color: var(--color-white-1);
   font-family: var(--font-body);
-  font-size: 1rem;
+  font-size: 1.15rem;
   font-weight: 500;
 }
 
@@ -149,7 +149,7 @@
   background: rgba(54, 56, 64, 0.95);
   color: var(--color-white-1);
   font-family: var(--font-body);
-  font-size: 0.98rem;
+  font-size: 1.127rem;
   line-height: 1.4;
   outline: none;
   transition:
@@ -195,7 +195,7 @@
   border: none;
   cursor: pointer;
   font-family: var(--font-display);
-  font-size: 1rem;
+  font-size: 1.15rem;
   font-weight: 700;
   transition:
     transform 0.2s ease,
@@ -243,7 +243,7 @@
   border-radius: 14px;
   box-sizing: border-box;
   font-family: var(--font-display);
-  font-size: 1rem;
+  font-size: 1.15rem;
   font-weight: 700;
   text-decoration: none;
   transition:
@@ -278,11 +278,11 @@
   }
 
   .modalHeader h2 {
-    font-size: 1.7rem;
+    font-size: 1.955rem;
   }
 
   .modalHeader p {
-    font-size: 0.92rem;
+    font-size: 1.058rem;
   }
 
   .modalButtons {

@@ -231,6 +231,6 @@ test("Perfil: publicações próprias e ciclo de vida das imagens privadas no na
     });
   } finally {
     pendentesLista.splice(0).forEach((responder) => responder()); pendentesFoto.splice(0).forEach((responder) => responder());
-    try { await chrome?.fechar(); } finally { try { await servidor?.close(); } finally { await rm(temporario, { recursive: true, force: true }); } }
+    try { await chrome?.fechar(); } finally { try { await servidor?.close(); } finally { await rm(temporario, { recursive: true, force: true, maxRetries: 5, retryDelay: 100 }); } }
   }
 });

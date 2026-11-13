@@ -68,7 +68,7 @@ body {
   display: inline-flex;
   margin-bottom: 0.9rem;
   color: var(--color-green-1);
-  font-size: 0.82rem;
+  font-size: 0.943rem;
   font-weight: 800;
   text-transform: uppercase;
 }
@@ -78,7 +78,7 @@ body {
   margin: 0;
   color: var(--color-white-1);
   font-family: var(--font-display);
-  font-size: clamp(2rem, 5vw, 3.7rem);
+  font-size: clamp(2.3rem, 5.75vw, 4.255rem);
   line-height: 1.05;
 }
 
@@ -86,7 +86,7 @@ body {
   max-width: 720px;
   margin: 1rem 0 0;
   color: var(--color-gray-2);
-  font-size: 1.05rem;
+  font-size: 1.2075rem;
   line-height: 1.7;
 }
 
@@ -108,7 +108,7 @@ body {
   margin: 0 0 0.85rem;
   color: var(--color-white-1);
   font-family: var(--font-display);
-  font-size: 1.15rem;
+  font-size: 1.3225rem;
 }
 
 .infoPanel p,

@@ -22,11 +22,12 @@ const entrada = `
   import AuthContext from '/src/contexts/authContextValue.js';
   import api, { definirTokenCsrf } from '/src/services/api.js';
   import Admin from '/src/pages/Admin.jsx';
+  import Sidebar from '/src/components/Sidebar.jsx';
   import '/src/styles/product.css';
   api.defaults.baseURL = location.origin; definirTokenCsrf('csrf-sintetico');
   const root = createRoot(document.getElementById('root'));
   window.renderAdmin = (usuario) => root.render(React.createElement(MemoryRouter,null,
-    React.createElement(AuthContext.Provider,{value:{usuario}},React.createElement(Admin))));
+    React.createElement(AuthContext.Provider,{value:{usuario}},React.createElement(React.Fragment,null,React.createElement(Sidebar),React.createElement(Admin)))));
   window.ocultarAdmin = () => root.render(null);
   window.marcadorPagina = 'pagina-original';
   const criar=URL.createObjectURL.bind(URL), revogar=URL.revokeObjectURL.bind(URL);
@@ -120,8 +121,14 @@ test("Admin: fila e decisões reais no navegador com backend sintético", {
       for (const usuario of [null, { _id: id(1), perfil: "user" }]) {
         await montar(usuario); await esperar(async () => (await texto()).includes("Acesso administrativo obrigatório"), "acesso restrito");
         assert.equal(await chrome.avaliar("document.querySelectorAll('.adminPostCard').length"), 0);
+        assert.equal(await chrome.avaliar("Boolean(document.querySelector('a[href=\"/admin\"]'))"), false);
       }
       assert.equal(requests.length, antes);
+    });
+    await t.test("menu administrativo aparece somente para admin", async () => {
+      await montar();
+      await esperar(() => chrome.avaliar("Boolean(document.querySelector('a[href=\"/admin\"]'))"), "link administrativo");
+      assert.equal(await chrome.avaliar("document.querySelector('a[href=\"/admin\"]').textContent.includes('Administração')"), true);
     });
     await t.test("fila mostra carregamento, dados, autor e miniaturas somente pelo endpoint administrativo", async () => {
       fila = { hold: true, dados: [post(1, [foto(1, 101), { _id: id(102), url: null }]), post(2, [foto(2, 103)])] };

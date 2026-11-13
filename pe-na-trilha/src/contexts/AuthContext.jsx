@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
+import { enviarFotoPerfil } from "../services/fotoPerfilService.js";
 import AuthContext from "./authContextValue.js";
 import {
   definirTokenCsrf,
@@ -94,6 +95,13 @@ export function AuthProvider({ children }) {
     return atualizado;
   }, []);
 
+  const usuarioId = usuario?._id;
+  const atualizarFotoPerfil = useCallback(async (arquivo, config = {}) => {
+    const resultado = await enviarFotoPerfil(arquivo, config);
+    if (!config.signal?.aborted) setUsuario((atual) => atual?._id === usuarioId ? { ...atual, fotoPerfil: resultado.fotoPerfil } : atual);
+    return resultado;
+  }, [usuarioId]);
+
   const valor = useMemo(
     () => ({
       usuario,
@@ -104,9 +112,10 @@ export function AuthProvider({ children }) {
       logout,
       consultarUsuario,
       atualizarPerfil,
+      atualizarFotoPerfil,
       tentarRestaurarSessao: carregarSessao,
     }),
-    [usuario, carregandoSessao, erroRestauracao, login, logout, consultarUsuario, atualizarPerfil, carregarSessao],
+    [usuario, carregandoSessao, erroRestauracao, login, logout, consultarUsuario, atualizarPerfil, atualizarFotoPerfil, carregarSessao],
   );
 
   return <AuthContext.Provider value={valor}>{children}</AuthContext.Provider>;

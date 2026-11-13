@@ -68,6 +68,23 @@ export async function abrirChrome(diretorio) {
     return {
       fechar,
       diagnostico: () => diagnosticos.join("\n"),
+      async pressionarTecla(key) {
+        const codigo = { Escape: 27, ArrowLeft: 37, ArrowRight: 39 }[key];
+        await enviar("Input.dispatchKeyEvent", { type: "keyDown", key, code: key, windowsVirtualKeyCode: codigo }, sessionId);
+        await enviar("Input.dispatchKeyEvent", { type: "keyUp", key, code: key, windowsVirtualKeyCode: codigo }, sessionId);
+      },
+      async deslizar(x, y, destinoX) {
+        await enviar("Emulation.setTouchEmulationEnabled", { enabled: true, maxTouchPoints: 1 }, sessionId);
+        await enviar("Input.dispatchTouchEvent", { type: "touchStart", touchPoints: [{ x, y }] }, sessionId);
+        await enviar("Input.dispatchTouchEvent", { type: "touchMove", touchPoints: [{ x: destinoX, y }] }, sessionId);
+        await enviar("Input.dispatchTouchEvent", { type: "touchEnd", touchPoints: [] }, sessionId);
+        await enviar("Emulation.setTouchEmulationEnabled", { enabled: false }, sessionId);
+      },
+      async clicarEm(x, y) {
+        await enviar("Input.dispatchMouseEvent", { type: "mouseMoved", x, y }, sessionId);
+        await enviar("Input.dispatchMouseEvent", { type: "mousePressed", button: "left", clickCount: 1, x, y }, sessionId);
+        await enviar("Input.dispatchMouseEvent", { type: "mouseReleased", button: "left", clickCount: 1, x, y }, sessionId);
+      },
       capturar: () => enviar("Page.captureScreenshot", { format: "png" }, sessionId),
       viewport: (width, height = 800) => enviar("Emulation.setDeviceMetricsOverride",
         { width, height, deviceScaleFactor: 1, mobile: false }, sessionId),

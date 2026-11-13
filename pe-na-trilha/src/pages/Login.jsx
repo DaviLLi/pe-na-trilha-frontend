@@ -1,3 +1,4 @@
+import { destinoAposLogin } from "../services/navegacaoSegura.js";
 import { useState } from "react";
 import { Link, useLocation, useNavigate } from "react-router-dom";
 import { useAuth } from "../contexts/useAuth";
@@ -19,8 +20,8 @@ function Login() {
     setEnviando(true);
 
     try {
-      await login({ identificador: identificador.trim(), senha });
-      navigate("/trilhas", { replace: true });
+      const usuario = await login({ identificador: identificador.trim(), senha });
+      navigate(destinoAposLogin(location.state?.from, usuario), { replace: true });
     } catch (erroRequisicao) {
       setErro(obterMensagemErro(erroRequisicao));
     } finally {

@@ -50,6 +50,7 @@ function PublicacaoPendente({ publicacao, aoDecidir }) {
   const emAndamento = useRef(false);
   useEffect(() => () => operacao.current?.abort(), []);
   const autor = typeof publicacao.proprietario === "string" ? publicacao.proprietario : publicacao.proprietario?._id;
+  const formularioId = `rejeicao-${publicacao._id}`;
   const motivoId = `motivo-${publicacao._id}`;
   const erroId = `erro-${publicacao._id}`;
 
@@ -62,8 +63,13 @@ function PublicacaoPendente({ publicacao, aoDecidir }) {
     operacao.current = controller; emAndamento.current = true;
     setEnviando(true); setErro("");
     try {
-      await moderarTrilha(publicacao._id, status === "approved" ? { status } : { status, motivo: motivo.trim() }, { signal: controller.signal });
-      if (!controller.signal.aborted) aoDecidir(publicacao._id, status);
+      const confirmada = await moderarTrilha(publicacao._id, status === "approved" ? { status } : { status, motivo: motivo.trim() }, { signal: controller.signal });
+      if (controller.signal.aborted) return;
+      if (confirmada?._id !== publicacao._id || confirmada.status !== status) {
+        setErro("A API não confirmou a decisão solicitada. Atualize a fila antes de tentar novamente.");
+        return;
+      }
+      aoDecidir(publicacao._id, status);
     } catch (falha) {
       if (!controller.signal.aborted && !axios.isCancel(falha)) setErro(obterMensagemErro(falha));
     } finally {
@@ -81,21 +87,24 @@ function PublicacaoPendente({ publicacao, aoDecidir }) {
         <FotoAdministrativa key={`${foto._id}:${foto.url}:${foto.updatedAt || ""}`} url={foto.url} titulo={publicacao.titulo} /> :
         <figure className="adminPhoto" key={foto._id}><figcaption>Foto indisponível</figcaption></figure>)}
     </div> : <p>Nenhuma foto cadastrada.</p>}
-    <form className="adminDecision" onSubmit={(evento) => { evento.preventDefault(); decidir("rejected"); }}>
+    <div className="adminDecision">
+      <form className="adminRejectionForm" id={formularioId} onSubmit={(evento) => { evento.preventDefault(); decidir("rejected"); }}>
       <label htmlFor={motivoId}>Motivo da rejeição</label>
       <textarea id={motivoId} value={motivo} onChange={(evento) => setMotivo(evento.target.value)}
         required maxLength={2000} disabled={enviando} aria-describedby={erro ? erroId : undefined} />
       {erro ? <p id={erroId} className="storageAlert" role="alert">{erro}</p> : null}
+      </form>
       <div className="adminDecisionButtons">
         <button className="primaryButton" type="button" disabled={enviando} onClick={() => decidir("approved")}>Aprovar</button>
-        <button className="secondaryButton" type="submit" disabled={enviando}>Rejeitar</button>
+        <button className="secondaryButton" type="submit" form={formularioId} disabled={enviando}>Rejeitar</button>
       </div>
       {enviando ? <p role="status">Enviando decisão...</p> : null}
-    </form>
+    </div>
   </article>;
 }
 
 function FilaPendentes() {
+  const [versao, setVersao] = useState(0);
   const [publicacoes, setPublicacoes] = useState([]);
   const [carregando, setCarregando] = useState(true);
   const [erro, setErro] = useState("");
@@ -104,6 +113,7 @@ function FilaPendentes() {
     const controller = new AbortController();
     let ativa = true;
     async function carregar() {
+      setCarregando(true); setErro("");
       try {
         const dados = await listarTrilhasPendentes({ signal: controller.signal });
         if (!Array.isArray(dados)) throw new Error("Resposta de moderação inválida.");
@@ -114,12 +124,13 @@ function FilaPendentes() {
     }
     carregar();
     return () => { ativa = false; controller.abort(); };
-  }, []);
+  }, [versao]);
   function decidida(id, status) {
     setPublicacoes((atuais) => atuais.filter((item) => item._id !== id));
     setAviso(status === "approved" ? "Publicação aprovada." : "Publicação rejeitada.");
   }
   return <section className="adminQueue" aria-label="Fila de moderação">
+    <button className="adminRefreshButton" type="button" disabled={carregando} onClick={() => setVersao((atual) => atual + 1)}>Atualizar fila</button>
     {aviso ? <p className="adminNotice" role="status">{aviso}</p> : null}
     {carregando ? <p role="status">Carregando publicações pendentes...</p> : erro ?
       <p className="storageAlert" role="alert">{erro}</p> : publicacoes.length ?

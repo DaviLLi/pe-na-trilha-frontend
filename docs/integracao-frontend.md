@@ -329,9 +329,12 @@ ou endpoints de reordenação para preencher essas lacunas.
 1. **Detalhes administrativos por ID:** não há endpoint dedicado. Definir se a
    primeira interface usará apenas os dados da fila ou se precisa de consulta
    individual/recarregamento; qualquer endpoint adicional exige definição própria.
-2. **Primeiro administrador:** confirmar o procedimento operacional de
-   provisionamento e os papéis do cadastro. A ausência de provisionamento na API
-   é uma anotação documental anterior, não verificada nesta revisão.
+2. **Primeiro administrador:** existe agora um comando operacional local no backend,
+   `admin:provisionar`, para promover uma conta existente com confirmação explícita,
+   transação e marcador único. Não há rota pública de promoção; o cadastro continua
+   criando `user`. Consultar `pe-na-trilha-backend/docs/primeiro-administrador.md`.
+   O comando não foi executado contra o banco nesta implementação; provisionamento
+   real e validação manual permanecem sob controle do operador.
 3. **Medalhas e contagem aprovada:** `usuario.trilhasAprovadas` continua proposta
    frontend, não campo retornado pelo backend. Definir onde o servidor fornecerá
    a contagem exclusivamente de approved. Não calcular pelo tamanho do Feed.

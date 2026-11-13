@@ -1,4 +1,5 @@
 import { Navigate, Route, Routes, useLocation } from "react-router-dom";
+import { destinoAposLogin } from "./services/navegacaoSegura.js";
 import Sidebar from "./components/Sidebar";
 import Home from "./pages/Home";
 import ListaTrilhas from "./pages/ListaTrilhas";
@@ -16,6 +17,8 @@ import "./styles/style.css";
 import "./styles/community.css";
 
 function ApenasVisitantes({ children }) {
+  const location = useLocation();
+  const { usuario } = useAuth();
   const {
     autenticado,
     carregandoSessao,
@@ -26,7 +29,7 @@ function ApenasVisitantes({ children }) {
   if (erroRestauracao) {
     return <SessaoTemporariamenteIndisponivel tentarNovamente={tentarRestaurarSessao} />;
   }
-  return autenticado ? <Navigate to="/trilhas" replace /> : children;
+  return autenticado && usuario?._id ? <Navigate to={destinoAposLogin(location.state?.from, usuario)} replace /> : children;
 }
 
 function SessaoTemporariamenteIndisponivel({ tentarNovamente }) {
@@ -56,7 +59,8 @@ function SessaoCarregando() {
   );
 }
 
-function RotaProtegida({ children }) {
+function RotaProtegida({ children, admin = false }) {
+  const { usuario } = useAuth();
   const {
     autenticado,
     carregandoSessao,
@@ -68,28 +72,31 @@ function RotaProtegida({ children }) {
   if (erroRestauracao) {
     return <SessaoTemporariamenteIndisponivel tentarNovamente={tentarRestaurarSessao} />;
   }
-  return autenticado ? children : <Navigate to="/login" replace state={{ from: location }} />;
+  if (!autenticado || !usuario?._id) return <Navigate to="/login" replace state={{ from: location }} />;
+  if (admin && usuario?.perfil !== "admin") return <Navigate to="/trilhas" replace />;
+  return children;
 }
 
 function App() {
   const { pathname } = useLocation();
-  const esconderMenu = pathname === "/login" || pathname === "/cadastro";
+  const { autenticado, carregandoSessao } = useAuth();
+  const esconderMenu = !autenticado || carregandoSessao || ["/login", "/cadastro", "/termos", "/privacidade"].includes(pathname);
 
   return (
     <div className={esconderMenu ? "appFrame authFrameOnly" : "appFrame"}>
       {!esconderMenu ? <Sidebar /> : null}
 
       <Routes>
-        <Route path='/' element={<Home />} />
-        <Route path='/trilhas' element={<ListaTrilhas />} />
+        <Route path='/' element={<RotaProtegida><Home /></RotaProtegida>} />
+        <Route path='/trilhas' element={<RotaProtegida><ListaTrilhas /></RotaProtegida>} />
         <Route path='/trilhas/nova' element={<RotaProtegida><CadastroTrilha /></RotaProtegida>} />
         <Route path='/trilhas/:id/editar' element={<RotaProtegida><EditarTrilha /></RotaProtegida>} />
         <Route path='/perfil' element={<RotaProtegida><Perfil /></RotaProtegida>} />
-        <Route path='/ajuda' element={<Ajuda />} />
+        <Route path='/ajuda' element={<RotaProtegida><Ajuda /></RotaProtegida>} />
         <Route path='/termos' element={<DocumentoLegal tipo="termos" />} />
         <Route path='/privacidade' element={<DocumentoLegal tipo="privacidade" />} />
-        <Route path='/medalhas' element={<GuiaMedalhas />} />
-        <Route path='/admin' element={<RotaProtegida><Admin /></RotaProtegida>} />
+        <Route path='/medalhas' element={<RotaProtegida><GuiaMedalhas /></RotaProtegida>} />
+        <Route path='/admin' element={<RotaProtegida admin><Admin /></RotaProtegida>} />
         <Route
           path='/login'
           element={
@@ -106,7 +113,7 @@ function App() {
             </ApenasVisitantes>
           }
         />
-        <Route path='*' element={<Home />} />
+        <Route path='*' element={<RotaProtegida><Navigate to="/trilhas" replace /></RotaProtegida>} />
       </Routes>
     </div>
   );

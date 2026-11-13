@@ -98,7 +98,7 @@ function FormularioCadastro() {
             <p>{resultado === "criada" ? "Sua publicação aguarda análise administrativa. Acompanhe o estado atual no Perfil." : "Consulte suas publicações antes de tentar cadastrar novamente."}</p>
             {envios.length ? <ul aria-label="Envio das fotos">{envios.map((envio, indice) => <li key={indice}><span>{envio.nome}</span><strong>{envio.estado}</strong></li>)}</ul> : null}
             <p role="status">{enviando ? "Enviando fotos… Aguarde a conclusão." : `${envios.filter((envio) => envio.estado === "Envio confirmado").length} foto(s) com envio confirmado.`}</p>
-            <Link className="secondaryButton formLink" to="/perfil">Ver minhas publicações</Link>
+            <Link className="secondaryButton formLink" to="/perfil" aria-disabled={enviando} onClick={(evento) => { if (enviando) evento.preventDefault(); }}>Ver minhas publicações</Link>
           </section>
         ) : (
           <TrilhaForm incluirDetalhes aoEnviar={cadastrar} enviando={enviando} textoBotao="Cadastrar publicação">

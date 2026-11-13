@@ -20,7 +20,7 @@
   border-radius: 14px;
   background: #e8f6ef;
   color: #00875f;
-  font-size: 1.8rem;
+  font-size: 2.07rem;
   font-weight: 700;
 }
 
@@ -28,7 +28,7 @@
   display: block;
   margin-top: 1.35rem;
   color: #00875f;
-  font-size: 0.72rem;
+  font-size: 0.828rem;
   font-weight: 800;
   letter-spacing: 0.1em;
   text-transform: uppercase;
@@ -38,14 +38,14 @@
   margin: 0.4rem 0 0;
   color: #183c30;
   font-family: var(--font-display);
-  font-size: 1.35rem;
+  font-size: 1.5525rem;
   letter-spacing: -0.04em;
 }
 
 .sidebarDescription {
   margin: 0.55rem 0 0;
   color: #728178;
-  font-size: 0.88rem;
+  font-size: 1.012rem;
   line-height: 1.6;
 }
 
@@ -61,12 +61,12 @@
 .trailCount strong {
   color: #00875f;
   font-family: var(--font-display);
-  font-size: 1.6rem;
+  font-size: 1.84rem;
 }
 
 .trailCount span {
   color: #728178;
-  font-size: 0.76rem;
+  font-size: 0.874rem;
 }
 
 .sidebar footer {
@@ -83,7 +83,7 @@
   border-radius: 12px;
   background: #00875f;
   color: white;
-  font-size: 0.86rem;
+  font-size: 0.989rem;
   font-weight: 800;
   text-decoration: none;
   transition: background-color 160ms ease, transform 160ms ease;
@@ -95,7 +95,7 @@
 }
 
 .sidebar footer a span {
-  font-size: 1.25rem;
+  font-size: 1.4375rem;
   line-height: 1;
 }
 
@@ -127,7 +127,7 @@
     grid-column: 2;
     grid-row: 2;
     margin: 0;
-    font-size: 1rem;
+    font-size: 1.15rem;
   }
 
   .sidebarDescription,
@@ -144,6 +144,6 @@
   .sidebar footer a {
     min-height: 2.55rem;
     padding-inline: 0.75rem;
-    font-size: 0.78rem;
+    font-size: 0.897rem;
   }
 }

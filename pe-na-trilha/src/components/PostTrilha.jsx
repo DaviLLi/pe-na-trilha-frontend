@@ -3,6 +3,7 @@ import { obterPermissoesTrilha } from "../services/trilhaPermissoes.js";
 import { useState } from "react";
 import { Link } from "react-router-dom";
 import { obterUrlImagemPublica } from "../services/imagensPublicacoesService.js";
+import GaleriaPublicacao from "./GaleriaPublicacao.jsx";
 import DetalhesTrilha from "./DetalhesTrilha.jsx";
 
 function EditIcon() {
@@ -37,11 +38,12 @@ function TrashIcon() {
 
 // A chave pela URL reinicia os eventos/estado quando muda a foto, sem efeitos
 // de sincronização e sem herdar uma falha da imagem anterior.
-function FotoDoFeed({ url, titulo, quantidade }) {
+function FotoDoFeed({ url, titulo, quantidade, aoAbrir }) {
   const [estado, setEstado] = useState("carregando");
   const falhou = estado === "erro";
   return (
     <figure className="postPhoto" aria-busy={estado === "carregando"}>
+      <button className="photoOpenControl" type="button" aria-label={`Ampliar fotos de ${titulo}`} onClick={aoAbrir}><span>Ampliar ↗</span></button>
       {falhou ? (
         <figcaption className="postPhotoStatus" role="status">Não foi possível carregar a foto.</figcaption>
       ) : (
@@ -65,6 +67,7 @@ function FotoDoFeed({ url, titulo, quantidade }) {
 
 function PostTrilha({ trilha, onDelete, excluindo }) {
   const { usuario } = useAuth();
+  const [galeria, setGaleria] = useState(false);
   const permissoes = obterPermissoesTrilha(trilha, usuario);
   const fotoDestaque = trilha.fotos?.[0];
   let urlFoto = null;
@@ -114,12 +117,14 @@ function PostTrilha({ trilha, onDelete, excluindo }) {
       </div>
 
       {urlFoto ? (
-        <FotoDoFeed key={urlFoto} url={urlFoto} titulo={trilha.titulo} quantidade={trilha.fotos.length} />
+        <FotoDoFeed key={urlFoto} url={urlFoto} titulo={trilha.titulo} quantidade={trilha.fotos.length} aoAbrir={() => setGaleria(true)} />
       ) : (
         <figure className="postPhoto postPhotoEmpty">
+          {trilha.fotos?.length ? <button className="photoOpenControl" type="button" aria-label={`Ampliar fotos de ${trilha.titulo}`} onClick={() => setGaleria(true)}><span>Ver fotos ↗</span></button> : null}
           <figcaption>{fotoDestaque ? "Foto indisponível" : "Nenhuma foto cadastrada"}</figcaption>
         </figure>
       )}
+      {galeria && trilha.fotos?.length ? <GaleriaPublicacao fotos={trilha.fotos} titulo={trilha.titulo} contexto="publico" aoFechar={() => setGaleria(false)} /> : null}
     </article>
   );
 }
