@@ -48,3 +48,14 @@ export function formatarDuracao(duracao) {
   if (!duracao || !duracaoValida(duracao)) return "";
   return [duracao.horas ? `${duracao.horas}h` : "", duracao.minutos ? `${duracao.minutos}min` : ""].filter(Boolean).join(" ");
 }
+
+export function validarFotosPublicacao(arquivos) {
+  if (!Array.isArray(arquivos) || arquivos.length > 5) return "Selecione até cinco fotos por publicação.";
+  for (const arquivo of arquivos) {
+    if (!(arquivo instanceof Blob) || !["image/jpeg", "image/png", "image/webp"].includes(arquivo.type)) {
+      return "Use fotos JPEG, PNG ou WebP.";
+    }
+    if (!arquivo.size || arquivo.size > 5 * 1024 * 1024) return "Cada foto deve ter conteúdo e no máximo 5 MiB.";
+  }
+  return "";
+}

@@ -620,3 +620,32 @@ body:has(.authPage) { background: radial-gradient(ellipse at 14% 24%, rgba(44, 1
 .profilePostPhoto img { display: block; width: 100%; height: 100%; object-fit: cover; }
 .profilePostPhoto[aria-busy="true"] img { opacity: 0; }
 .profilePostPhoto figcaption { position: absolute; inset: 0; display: grid; place-items: center; padding: .6rem; color: var(--product-muted); font-size: .7rem; text-align: center; overflow-wrap: anywhere; }
+
+/* Fila administrativa: somente visualização e decisão de moderação. */
+.adminQueue { display: grid; gap: 1rem; }
+.adminPostCard { min-width: 0; padding: 1rem; border: 1px solid var(--product-line); border-radius: var(--product-radius); background: var(--product-panel); }
+.adminPostCard h2 { margin: 0 0 .6rem; color: var(--product-text); font: 600 1.05rem var(--font-display); overflow-wrap: anywhere; }
+.adminPostCard > p { color: var(--product-muted); font-size: .8rem; line-height: 1.5; overflow-wrap: anywhere; }
+.adminPostAddress, .adminPostAuthor { font-size: .73rem; }
+.adminPhotos { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 8rem), 1fr)); gap: .5rem; margin: .8rem 0; }
+.adminPhoto { position: relative; min-width: 0; aspect-ratio: 4 / 3; margin: 0; overflow: hidden; border-radius: .65rem; background: #101815; }
+.adminPhoto img { display: block; width: 100%; height: 100%; object-fit: cover; }
+.adminPhoto[aria-busy="true"] img { opacity: 0; }
+.adminPhoto figcaption { position: absolute; inset: 0; display: grid; place-items: center; padding: .6rem; color: var(--product-muted); font-size: .7rem; text-align: center; overflow-wrap: anywhere; }
+.adminDecision { display: grid; gap: .6rem; margin-top: 1rem; }
+.adminDecision label { color: var(--product-text); font-size: .78rem; }
+.adminDecision textarea { box-sizing: border-box; width: 100%; min-height: 5rem; padding: .7rem; border: 1px solid var(--product-line); border-radius: .65rem; background: #101815; color: var(--product-text); font: inherit; resize: vertical; }
+.adminDecision textarea:focus-visible { outline: 2px solid var(--product-green-hover); outline-offset: 2px; }
+.adminDecision p { margin: 0; color: var(--product-muted); font-size: .75rem; }
+.adminDecision .storageAlert { color: #ffd2cc; }
+.adminDecisionButtons { display: flex; flex-wrap: wrap; gap: .6rem; }
+.adminDecisionButtons button { min-height: 2.75rem; padding: .65rem 1rem; }
+.adminNotice { margin: 0; color: var(--product-green-hover); font-size: .8rem; }
+
+/* Cadastro: seleção local e resultado de envios individuais. */
+.publicationPhotos { display: grid; gap: 12px; min-width: 0; }
+.publicationPhotos input { max-width: 100%; }
+.publicationPhotos small { line-height: 1.6; }
+.publicationPhotos li, .publicationResult li { overflow-wrap: anywhere; }
+.publicationResult ul { display: grid; gap: 12px; padding-left: 20px; }
+.publicationResult li strong { display: block; }

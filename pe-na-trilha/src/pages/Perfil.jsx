@@ -19,7 +19,6 @@ function Perfil() {
           {foto ? <img src={foto} alt={`Foto de ${nome}`} /> : <span aria-hidden="true">{nome.charAt(0).toLocaleUpperCase("pt-BR")}</span>}
         </div>
         <div className="profileIdentityCopy">
-          <span className="pageEyebrow">Seu espaço na comunidade</span>
           <h1 id="profile-name">{nome}</h1>
           {nomeUsuario ? <p className="profileHandle">@{nomeUsuario}</p> : null}
         </div>

@@ -25,6 +25,7 @@ function TrilhaForm({
   textoBotao = "Salvar trilha",
   incluirDetalhes = false,
   envioIndisponivel = false,
+  children,
 }) {
   const [campos, setCampos] = useState(() => ({ ...camposVazios, ...valoresIniciais }));
   const [respostas, setRespostas] = useState(respostasVazias);
@@ -56,7 +57,7 @@ function TrilhaForm({
 
   const handleSubmit = (evento) => {
     evento.preventDefault();
-    if (envioIndisponivel || !aoEnviar) return;
+    if (envioIndisponivel || enviando || !aoEnviar) return;
     const novosErros = validarPublicacao(campos, incluirDetalhes ? duracao : null);
     setErros(novosErros);
     if (Object.keys(novosErros).length) {
@@ -135,6 +136,8 @@ function TrilhaForm({
           }} desabilitado={enviando} erro={erros.duracao} />
         </section>
       ) : null}
+
+      {children}
 
       <div className="modalButtons">
         {envioIndisponivel ? (
