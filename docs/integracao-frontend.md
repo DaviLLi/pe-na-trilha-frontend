@@ -8,11 +8,28 @@ Nesta tarefa somente este documento foi atualizado. Componentes, serviços,
 funcionalidades e backend permanecem sem alterações. Todos os caminhos de código
 frontend abaixo são relativos a `pe-na-trilha/`; este documento fica em `docs/`.
 
+## Fontes e grau de confirmação
+
+Esta revisão usa o contrato informado pelo responsável pelo backend e a leitura
+estática do frontend atual. Estão confirmados nesta solicitação os caminhos de
+publicações/fotos, os três estados, as regras de edição, os campos das fotos,
+`proprietario`, `perfil`, as variantes e os limites de upload.
+
+Detalhes complementares já existentes neste documento foram preservados como
+**informação documental anterior, sem nova validação no backend**: envelopes e
+códigos de sucesso, corpos de moderação/reenvio, regras de limpeza com null,
+headers/cache, MIME de saída, limites internos de entrega, sessões, endpoints de
+avatar e procedimentos operacionais. Não tratar sua presença como nova confirmação;
+revalidá-los antes de implementar fluxos que dependam desses detalhes. Os exemplos
+abaixo são ilustrativos, não resultados de consultas reais. Nenhum endpoint ou
+resposta foi acrescentado por inferência nesta revisão.
+
 ## 1. Convenções de dados e autenticação
 
 - Publicações e usuários usam `_id`. Cada foto também possui seu próprio `_id`.
-- A autoria da publicação está em `proprietario`, contendo o ID do usuário.
-  Comparar com `usuario._id`; não esperar `autorId` ou `autor._id`.
+- A autoria da publicação está em `proprietario`. Não esperar `autorId` ou
+  `autor._id`. A forma exata do valor (ID simples ou objeto) deve ser confirmada
+  antes de normalizar a comparação com `usuario._id`.
 - O papel está em `usuario.perfil`: `user` ou `admin`. Não existe campo `role`
   confirmado, nem objeto `permissoes` no DTO atual.
 - A API aplica propriedade, estado e papel administrativo. Controles no React
@@ -188,7 +205,7 @@ O campo `url` já usa o contexto apropriado: público nas consultas públicas, a
 nas consultas próprias/criação/edição/upload, admin na fila e decisões administrativas.
 Não usar a URL do autor para visualizar publicação de terceiro como administrador.
 
-O sucesso é 200 com bytes `image/webp`, sem JSON, base64 ou redirect Cloudinary.
+Segundo o detalhamento documental anterior, o sucesso é 200 com bytes `image/webp`, sem JSON, base64 ou redirect Cloudinary.
 Selecionar `?variante=miniatura` (limite 480×360) ou `?variante=detalhe` (limite
 1600×1600). São limites preservando proporção, não dimensões fixas. Sem parâmetro,
 usa detalhe; parâmetro vazio, duplicado, desconhecido ou extra retorna 400.
@@ -196,8 +213,9 @@ Não inventar parâmetros de transformação. HEAD verifica acesso sem baixar a 
 
 Resolver `url` usando a origem configurada da API; não usar a origem do site React.
 Feed pode usar a URL pública absoluta em img, com miniatura e lazy loading. Para
-proprietário/admin, a integração futura deve usar Axios com `responseType: blob`,
-withCredentials e o refresh existente, criando object URL para apresentação.
+proprietário/admin, usar Axios com `responseType: blob`, `withCredentials` e o
+refresh existente, criando object URL para apresentação. O Perfil já implementa
+esse fluxo para o proprietário; a tela administrativa ainda não o consome.
 Revogar object URLs ao trocar imagem, desmontar ou sair; cancelar requests pendentes.
 Não persistir imagens privadas em localStorage, service worker ou cache offline.
 
@@ -279,36 +297,47 @@ O formato usual de erro é `{ "mensagem": "..." }`; validações podem acrescent
 resposta. Autenticação ocorre antes desse handler. Usar concorrência e retry
 limitados no cliente, sem presumir disponibilidade ilimitada.
 
-## 8. Diferenças no frontend atual — ainda não implementadas
+## 8. Frontend atual: implementado, parcial e pendente
 
 | Arquivo/fluxo | Situação observada | Integração necessária após revisão |
 | --- | --- | --- |
-| `src/services/api.js` | Cookies, CSRF e refresh já existem; mensagem de erro espera JSON. | Reutilizar o cliente e tratar erros Blob/refresh concorrente. |
-| `src/services/trilhasService.js` | CRUD público básico; não chama consultas próprias, moderação ou fotos. | Acrescentar fluxos confirmados em tarefa de código posterior. |
-| `src/services/trilhaPermissoes.js` | Usa autorId/autor._id e permissões opcionais. | Mapear proprietario e estado; não esperar permissões no DTO. |
-| `src/components/PostTrilha.jsx` | Usa fotos[0].url diretamente em img. | Resolver origem da API, selecionar miniatura e respeitar null. |
-| `src/pages/EditarTrilha.jsx` | Consulta detalhes públicos e inicializa dados básicos. | Consultar detalhes próprios, inicializar detalhes opcionais e limitar payload por estado. |
-| `src/services/publicacaoValidation.js` | Omite respostas vazias e sempre prepara campos básicos. | Distinguir criação, limpeza com null e edição de aprovada. |
-| `src/pages/CadastroTrilha.jsx` | Criação desativada com aviso de falta de suporte backend. | Conectar criação pending e uploads; textos atuais estão desatualizados. |
-| `src/pages/Admin.jsx` | Placeholder informa ausência de fila/decisões. | Conectar fila, fotos privadas, aprovação e rejeição. |
-| `src/App.jsx` | /admin usa proteção genérica de sessão. | Refletir perfil admin na navegação/tela, preservando autorização backend. |
-| `src/pages/Perfil.jsx` | Publicações e edição do perfil ainda não conectadas. | Usar consultas próprias e endpoints de perfil já existentes. |
+| `src/services/api.js` | Implementado: cookies, CSRF e refresh; mensagem central espera JSON. | Preservar o cliente; revalidar segundo 401 e refresh concorrente. |
+| `src/services/trilhasService.js` | Implementado: CRUD básico e `listarMinhasTrilhas`, que chama GET /trilhas/minhas. | Faltam detalhes próprios, fila, moderação, reenvio e operações de fotos. |
+| `src/services/imagensPublicacoesService.js` | Implementado: resolve URL pública na origem da API; aceita URLs privadas do proprietário/admin, busca Blob com cookies, variante e cancelamento; converte mensagens JSON de erros Blob. | Integrar consumidor administrativo e confirmar restrições locais: IDs hexadecimais de 24 caracteres, resposta WebP e máximo 8 MiB. Esses limites de entrega não são os 5 MiB de upload. |
+| `src/services/trilhaPermissoes.js` | Incompatível: usa autorId/autor._id e permissões opcionais; não considera status. | Adaptar futuramente para proprietario e regras por estado; papel admin não concede edição de terceiros. |
+| `src/components/PostTrilha.jsx` | Implementado: capa fotos[0], URL pública validada na origem da API e variante miniatura; estados de carregamento/erro e fallback para URL ausente ou inválida. | Falta visualização de detalhe/galeria; ações ainda dependem do mapeamento incorreto de autoria. |
+| `src/components/PublicacoesPerfil.jsx` | Implementado: lista próprias, mostra status/motivo e fotos via Blob; cria/revoga object URLs, cancela requests e inclui updatedAt na chave da foto. | Falta editar por estado e reenviar; todas as buscas de fotos começam na montagem, sem limitar concorrência ou aguardar visibilidade. |
+| `src/pages/EditarTrilha.jsx` | Parcial: consulta detalhes públicos e inicializa somente dados básicos. | Consultar GET /trilhas/minhas/:id, inicializar opcionais e duração e limitar payload por estado; pending/rejected não devem depender de consulta pública. |
+| `src/components/TrilhaForm.jsx` | Implementado: perguntas opcionais e duração numérica; sem seleção, prévia ou gerenciamento de arquivos. | Separar criação/edição por estado e integrar arquivos somente pelo contrato de fotos. |
+| `src/services/publicacaoValidation.js` | Parcial: omite respostas vazias e prepara campos básicos. | Distinguir criação, limpeza persistida e edição de approved; confirmar regras de null antes de implementação. |
+| `src/pages/CadastroTrilha.jsx` | Criação desativada com aviso de falta de suporte backend. | Contrato de criação pending e upload já confirmado; ainda falta integração frontend e revisão dos avisos. |
+| `src/pages/Admin.jsx` | Ausente: placeholder informa ausência de fila/decisões. | Consumir GET /trilhas/pendentes, fotos administrativas e POST /trilhas/:id/moderacao. |
+| `src/App.jsx` | Parcial: /admin usa proteção genérica de sessão. | Refletir usuario.perfil === "admin" na tela/navegação, preservando autorização backend. |
+| `src/pages/Perfil.jsx` | Parcial: monta PublicacoesPerfil por usuario._id; medalha ainda espera contagem não fornecida; edição de perfil desativada. | Manter leitura própria existente e resolver contagem/edição em contratos específicos. |
 
 Nenhum desses arquivos de código foi alterado nesta consolidação. A documentação
 atualizada não habilita criação nem moderação no frontend por si só.
 
 ## 9. Pendências de backend e decisões de produto
 
+Os endpoints de publicação, leitura, upload, substituição, remoção, moderação e
+reenvio informados nesta solicitação **já fazem parte do contrato**. Sua ausência
+em componentes não significa ausência no backend. Não criar aliases, rotas de lote
+ou endpoints de reordenação para preencher essas lacunas.
+
+
 1. **Detalhes administrativos por ID:** não há endpoint dedicado. Definir se a
    primeira interface usará apenas os dados da fila ou se precisa de consulta
    individual/recarregamento; qualquer endpoint adicional exige definição própria.
-2. **Primeiro administrador:** não há provisionamento seguro implementado na API.
-   Definir procedimento operacional controlado; cadastro público sempre cria user.
+2. **Primeiro administrador:** confirmar o procedimento operacional de
+   provisionamento e os papéis do cadastro. A ausência de provisionamento na API
+   é uma anotação documental anterior, não verificada nesta revisão.
 3. **Medalhas e contagem aprovada:** `usuario.trilhasAprovadas` continua proposta
    frontend, não campo retornado pelo backend. Definir onde o servidor fornecerá
    a contagem exclusivamente de approved. Não calcular pelo tamanho do Feed.
 4. **Aceite/versionamento:** o frontend envia aceiteTermos, versaoTermos e
-   versaoPoliticaPrivacidade; o backend auditado descarta esses campos. Definir e
+   versaoPoliticaPrivacidade; a documentação anterior informa que o backend descarta esses campos;
+   isso não foi verificado nesta revisão. Definir e
    implementar validação e persistência atômicas com data do servidor. Sucesso no
    cadastro não comprova registro do aceite.
 5. **Acervo legado:** inventariar e definir migração autorizada. Fotos com url null
@@ -319,9 +348,31 @@ atualizada não habilita criação nem moderação no frontend por si só.
    após publicação criada com parte das fotos; o backend não oferece lote atômico.
 8. **Produção:** validar com autorização separada Cloudinary authenticated, Atlas
    com transações, CORS/HTTPS/cookies nos navegadores, recursos da hospedagem e
-   recuperação do worker. Não há endpoint de saúde nem limitação de login implementados.
+   recuperação do worker. A ausência de endpoint de saúde e limitação de login é uma anotação anterior
+   a confirmar, não resultado de inspeção do backend nesta tarefa.
 9. **Escala das listagens:** se necessário, definir paginação e filtros; eles não
    fazem parte do contrato atual e não podem ser presumidos pelo cliente.
+
+### Confirmações necessárias antes da próxima tarefa de código
+
+- Tipo exato de `proprietario` e possibilidade de variação entre consultas.
+- Enum completo de `storageState` e comportamento para cada estado/legado.
+- Quais respostas retornam `url` pública, própria ou administrativa; nunca deduzir
+  acesso a partir de permissão de edição nem trocar contextos silenciosamente.
+- Alcance da leitura administrativa fora de pending: o pedido confirma acesso
+  às pendentes; a tabela anterior menciona outros estados, ainda a revalidar.
+- Envelopes e códigos de sucesso/erro, corpos de decisão e reenvio e garantias de
+  manutenção de ID/posição na substituição, descritos anteriormente.
+- MIME efetivo de entrega e compatibilidade com o serviço que aceita só WebP;
+  limites/dimensões das variantes e parâmetro omitido, sem confundir formatos
+  aceitos no upload com formato retornado pelo streaming.
+- Semântica de omissão/null na edição e concorrência entre upload e aprovação.
+- Estratégia de UX para falha parcial e ordem dos uploads individuais. Não há
+  upload múltiplo atômico, reordenação ou capa configurável para implementar.
+
+Essas confirmações não autorizam inventar respostas nem modificar o backend.
+`docs/moderacao-publicacoes.md`, indicado no contexto do editor, não foi localizado
+no workspace nesta revisão; nenhum contrato adicional foi atribuído a esse arquivo.
 
 ### Medalhas preservadas no frontend
 
@@ -353,8 +404,9 @@ e [ANPD — direitos dos titulares](https://www.gov.br/anpd/pt-br/assuntos/titul
 ## 10. Ordem recomendada e validação futura
 
 1. Revisar e aprovar este contrato e as decisões pendentes.
-2. Corrigir autoria, papel administrativo e escolha de consulta por contexto.
-3. Integrar leitura pública e privada de imagens, com cancelamento e limpeza de Blobs.
+2. Corrigir autoria, papel administrativo e escolha de consulta de detalhes por contexto.
+3. Preservar leitura pública e própria já existente; integrar o consumidor administrativo
+   e limitar concorrência, mantendo cancelamento e limpeza de object URLs.
 4. Integrar criação/edição por estado e gerenciamento individual de fotos.
 5. Integrar fila, decisões administrativas, motivo e reenvio explícito do autor.
 6. Completar contratos pendentes e validar os fluxos em ambiente autorizado.
