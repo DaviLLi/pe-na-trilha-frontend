@@ -1,3 +1,4 @@
+import PublicacoesPerfil from "../components/PublicacoesPerfil.jsx";
 import MedalhaPerfil from "../components/MedalhaPerfil";
 import { calcularMedalha } from "../data/niveisMedalhas.js";
 import { Link } from "react-router-dom";
@@ -44,7 +45,8 @@ function Perfil() {
 
       <section className="profilePosts" aria-labelledby="profile-posts-title">
         <div className="profilePostsHeading"><div><span className="pageEyebrow">Contribuições</span><h2 id="profile-posts-title">Publicações</h2></div><Link to="/trilhas/nova">Nova publicação <span aria-hidden="true">↗</span></Link></div>
-        <div className="profilePostsEmpty"><span aria-hidden="true">＋</span><strong>Suas publicações aparecerão aqui</strong><p>A API ainda não informa quais trilhas pertencem a este perfil.</p></div>
+        {usuario?._id ? <PublicacoesPerfil key={usuario._id} /> :
+          <p className="profileUnavailable" role="status">Entre na sua conta para consultar suas publicações.</p>}
       </section>
     </main>
   );

@@ -1,4 +1,4 @@
-import api from "./api";
+import api from "./api.js";
 
 export async function listarTrilhas(config = {}) {
   const resposta = await api.get("/trilhas", config);
@@ -22,4 +22,9 @@ export async function atualizarTrilha(id, dados) {
 
 export async function excluirTrilha(id) {
   await api.delete(`/trilhas/${id}`);
+}
+
+export async function listarMinhasTrilhas(config = {}) {
+  const resposta = await api.get("/trilhas/minhas", config);
+  return resposta.data;
 }
