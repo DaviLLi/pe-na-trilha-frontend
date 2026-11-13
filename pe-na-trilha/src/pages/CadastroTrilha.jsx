@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState } from "react";
 import { Link } from "react-router-dom";
+import SelecionarFotosPublicacao from "../components/SelecionarFotosPublicacao.jsx";
 import TrilhaForm from "../components/TrilhaForm";
 import { useAuth } from "../contexts/useAuth";
 import { criarTrilha, adicionarFotoTrilha } from "../services/trilhasService.js";
@@ -31,8 +32,8 @@ function FormularioCadastro() {
   async function cadastrar(dados) {
     if (ocupado.current || resultado) return;
     const falhaFotos = validarFotosPublicacao(fotos);
-    setErroFotos(falhaFotos);
-    if (falhaFotos) return;
+    if (falhaFotos) { setErroFotos(falhaFotos); return; }
+    if (erroFotos) return;
     ocupado.current = true;
     setEnviando(true);
     setErro("");
@@ -101,18 +102,7 @@ function FormularioCadastro() {
           </section>
         ) : (
           <TrilhaForm incluirDetalhes aoEnviar={cadastrar} enviando={enviando} textoBotao="Cadastrar publicação">
-            <section className="publicationPhotos" aria-labelledby="publication-photos-title">
-              <h2 id="publication-photos-title">Fotos <span className="optionalMark">Opcionais</span></h2>
-              <label htmlFor="fotos-publicacao">Selecione até cinco fotos</label>
-              <input id="fotos-publicacao" type="file" multiple accept="image/jpeg,image/png,image/webp" disabled={enviando} aria-describedby="fotos-ajuda" onChange={(evento) => {
-                const arquivos = Array.from(evento.target.files || []);
-                setFotos(arquivos);
-                setErroFotos(validarFotosPublicacao(arquivos));
-              }} />
-              <small id="fotos-ajuda">JPEG, PNG ou WebP, até 5 MiB cada. Serão enviadas individualmente após o cadastro, na ordem selecionada. A primeira foto será a capa.</small>
-              {fotos.length ? <ul>{fotos.map((foto, indice) => <li key={indice}>{foto.name}</li>)}</ul> : null}
-              {erroFotos ? <p className="fieldError" role="alert">{erroFotos}</p> : null}
-            </section>
+            <SelecionarFotosPublicacao fotos={fotos} aoAlterar={setFotos} desabilitado={enviando} erro={erroFotos} aoErro={setErroFotos} id="fotos-publicacao" />
           </TrilhaForm>
         )}
       </section>

@@ -649,3 +649,79 @@ body:has(.authPage) { background: radial-gradient(ellipse at 14% 24%, rgba(44, 1
 .publicationPhotos li, .publicationResult li { overflow-wrap: anywhere; }
 .publicationResult ul { display: grid; gap: 12px; padding-left: 20px; }
 .publicationResult li strong { display: block; }
+
+/* Ações do proprietário e gerenciamento individual de fotos. */
+.ownerPublicationActions { display: flex; flex-wrap: wrap; gap: 12px; margin-top: 16px; }
+.ownerPhotoManager { display: grid; gap: 16px; margin-top: 32px; }
+.ownerPhotoItem, .ownerPhotoUpload { display: grid; gap: 12px; min-width: 0; }
+.ownerPhotoUpload label { display: grid; gap: 8px; }
+.ownerPhotoUpload input { max-width: 100%; }
+.ownerPublicationEditor .formCard > .formLink { margin-top: 24px; }
+
+/* Seleção local: a sequência das miniaturas acompanha a ordem de envio. */
+.publicationPhotos { padding: 1.1rem; border: 1px solid var(--product-line); border-radius: var(--product-radius); background: var(--product-panel); }
+.photoPickerHeading { display: flex; align-items: center; justify-content: space-between; gap: 1rem; }
+.photoPickerHeading h3 { margin: 0; font: 600 .95rem var(--font-display); color: var(--product-text); }
+.photoPickerHeading > span { color: var(--product-green-hover); font: 700 .75rem var(--font-body); white-space: nowrap; }
+.photoPickerControl { position: relative; border: 1px dashed #497061; border-radius: .7rem; background: #10241c; }
+.photoPickerInput { position: absolute; width: 1px; height: 1px; padding: 0; border: 0; clip-path: inset(50%); overflow: hidden; }
+.photoPickerControl label { display: grid; justify-items: center; gap: .4rem; padding: 1.25rem .8rem; cursor: pointer; text-align: center; }
+.photoPickerControl label svg { width: 1.4rem; height: 1.4rem; fill: none; stroke: var(--product-green-hover); stroke-width: 1.6; stroke-linecap: round; }
+.photoPickerControl label strong { color: var(--product-text); font: 600 .8rem var(--font-body); }
+.photoPickerControl label span { color: var(--product-muted); font-size: .7rem; }
+.photoPickerControl:focus-within { outline: 2px solid var(--product-green-hover); outline-offset: 3px; }
+.photoPickerControl label[aria-disabled="true"] { cursor: default; opacity: .65; }
+.photoPickerHelp, .photoPickerLimit { margin: 0; color: var(--product-muted); font-size: .75rem; line-height: 1.6; }
+.photoPickerLimit { color: #80d8b6; }
+.selectedPhotosGrid { display: grid; grid-template-columns: repeat(auto-fill, minmax(115px, 1fr)); gap: .65rem; }
+.selectedPhoto { position: relative; min-width: 0; margin: 0; overflow: hidden; border: 1px solid var(--product-line); border-radius: .6rem; background: #0b1612; }
+.selectedPhoto img, .selectedPhotoFallback { display: block; width: 100%; aspect-ratio: 4 / 3; object-fit: cover; }
+.selectedPhotoFallback { display: grid; place-items: center; color: var(--product-muted); font-size: .7rem; }
+.selectedPhoto figcaption { overflow: hidden; padding: .55rem .6rem; color: var(--product-muted); font-size: .68rem; text-overflow: ellipsis; white-space: nowrap; }
+.selectedPhotoPosition { position: absolute; top: .5rem; left: .5rem; padding: .22rem .4rem; border-radius: .3rem; background: #07100ee8; color: #b8efda; font-size: .6rem; font-weight: 700; }
+.removeSelectedPhoto { position: absolute; top: 0; right: 0; display: grid; place-items: center; width: 44px; height: 44px; padding: 10px; border: 0; border-radius: 0 0 0 .6rem; background: #07100ee8; color: #f2c6bf; cursor: pointer; }
+.removeSelectedPhoto svg { width: 18px; height: 18px; fill: none; stroke: currentColor; stroke-width: 2; stroke-linecap: round; }
+.removeSelectedPhoto:disabled { cursor: default; opacity: .5; }
+.removeSelectedPhoto:focus-visible, .ownerPublicationActions .ownerAction:focus-visible, .profileEdit:focus-visible, .profileEditPanel button:focus-visible { outline: 2px solid var(--product-green-hover); outline-offset: 3px; }
+
+/* Ações compactas, com a exclusão identificável sem dominar o cartão. */
+.ownerPublicationActions { align-items: center; gap: .5rem; padding-top: .9rem; border-top: 1px solid var(--product-line); }
+.ownerPublicationActions .ownerAction, .ownerPhotoManager .ownerDeleteButton { flex: 0 1 auto; display: inline-flex; align-items: center; justify-content: center; gap: .4rem; box-sizing: border-box; width: auto; min-height: 44px; margin: 0; padding: .5rem .7rem; border: 1px solid var(--product-line); border-radius: .5rem; font: 600 .72rem/1.3 var(--font-body); text-decoration: none; cursor: pointer; }
+.ownerPublicationActions .ownerEditButton, .ownerPublicationActions .ownerResubmitButton { background: #12291f; color: #b8e6d3; }
+.ownerPublicationActions .ownerDeleteButton, .ownerPhotoManager .ownerDeleteButton { border-color: transparent; background: transparent; color: #e49d93; }
+.ownerDeleteButton svg { flex: 0 0 auto; width: 17px; height: 17px; fill: none; stroke: currentColor; stroke-width: 1.7; stroke-linecap: round; stroke-linejoin: round; }
+.ownerPublicationActions .ownerAction:disabled, .ownerPublicationActions .ownerAction[aria-disabled="true"] { opacity: .5; cursor: default; }
+@media (hover: hover) {
+  .ownerPublicationActions .ownerDeleteButton:not(:disabled):hover, .ownerPhotoManager .ownerDeleteButton:not(:disabled):hover { background: #351d1a; border-color: #603b35; }
+  .photoPickerControl:has(input:not(:disabled)):hover { border-color: var(--product-green-hover); background: #143025; }
+}
+
+/* Identidade abaixo do banner; somente o avatar se sobrepõe à capa. */
+.profilePage .profileIdentity { display: grid; grid-template-columns: 6rem minmax(0, 1fr) auto; align-items: center; gap: 1.2rem; margin: 0 1.4rem 1.7rem; padding-top: 1rem; }
+.profilePage .profileAvatar { align-self: start; margin-top: -2.5rem; }
+.profilePage .profileIdentityCopy { padding-top: 0; }
+.profilePage .profileIdentityCopy h1, .profilePage .profileHandle { overflow-wrap: anywhere; }
+.profilePage .profileEditGroup { width: auto; margin: 0; padding: 0; }
+.profileEditPanel { margin-bottom: 1.5rem; padding: 1.25rem; border: 1px solid var(--product-line); border-radius: var(--product-radius); background: var(--product-panel); }
+.profileEditPanel h2 { margin: .25rem 0 .5rem; font: 600 1.2rem var(--font-display); }
+.profileEditPanel header p { color: var(--product-muted); font-size: .8rem; }
+.profileEditPanel form { display: grid; gap: 1rem; margin-top: 1.25rem; }
+.profileEditPanel .formField { display: grid; gap: .45rem; }
+.profileEditPanel label { font-size: .8rem; font-weight: 600; }
+.profileEditPanel input { box-sizing: border-box; width: 100%; min-width: 0; padding: .8rem; border: 1px solid var(--product-line); border-radius: .55rem; background: #0c1712; color: var(--product-text); font: 400 1rem var(--font-body); }
+.profileEditPanel input:focus-visible { outline: 2px solid var(--product-green-hover); outline-offset: 2px; }
+.profileEditSuccess { color: #80d8b6; font-size: .85rem; }
+.newPostPage .trilhaForm, .ownerPublicationEditor .trilhaForm { gap: 1.35rem; }
+.newPostPage .trilhaForm .formField, .ownerPublicationEditor .trilhaForm .formField { min-width: 0; }
+.newPostPage .trilhaForm input[type="text"], .newPostPage .trilhaForm textarea, .ownerPublicationEditor .trilhaForm input[type="text"], .ownerPublicationEditor .trilhaForm textarea { box-sizing: border-box; font-size: 1rem; line-height: 1.5; border-radius: .6rem; background: #0c1712; }
+.ownerPhotoUpload > .secondaryButton { justify-self: start; width: auto; min-height: 44px; padding: .55rem 1rem; font: 600 .75rem var(--font-body); }
+@media (max-width: 640px) {
+  .profilePage .profileIdentity { grid-template-columns: 4.6rem minmax(0, 1fr); gap: .8rem; margin: 0 .35rem 1.3rem; padding-top: .9rem; }
+  .profilePage .profileAvatar { width: 4.6rem; height: 4.6rem; margin-top: -1.8rem; }
+  .profilePage .profileEditGroup { grid-column: 2; justify-items: start; }
+  .publicationPhotos, .profileEditPanel { padding: .85rem; }
+  .selectedPhotosGrid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .ownerPublicationActions { align-items: center; gap: .35rem; }
+  .ownerPublicationActions .ownerAction { max-width: 100%; }
+  .profileEditPanel .modalButtons { flex-wrap: wrap; }
+}

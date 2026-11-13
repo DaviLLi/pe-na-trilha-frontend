@@ -16,13 +16,13 @@ export async function criarTrilha(dados, config = {}) {
   return resposta.data;
 }
 
-export async function atualizarTrilha(id, dados) {
-  const resposta = await api.put(`/trilhas/${id}`, dados);
+export async function atualizarTrilha(id, dados, config = {}) {
+  const resposta = await api.put(`/trilhas/${id}`, dados, config);
   return resposta.data;
 }
 
-export async function excluirTrilha(id) {
-  await api.delete(`/trilhas/${id}`);
+export async function excluirTrilha(id, config = {}) {
+  await api.delete(`/trilhas/${id}`, config);
 }
 
 export async function listarMinhasTrilhas(config = {}) {
@@ -57,4 +57,32 @@ export async function adicionarFotoTrilha(id, arquivo, config = {}) {
   dados.append("imagem", arquivo, arquivo.name || "foto");
   const resposta = await api.post(`/trilhas/${id}/fotos`, dados, config);
   return resposta.data;
+}
+
+function validarId(id) {
+  if (typeof id !== "string" || !/^[a-f0-9]{24}$/i.test(id)) throw new Error("Identificador inválido.");
+}
+
+export async function buscarMinhaTrilha(id, config = {}) {
+  validarId(id);
+  return (await api.get(`/trilhas/minhas/${id}`, config)).data;
+}
+
+export async function reenviarTrilha(id, config = {}) {
+  validarId(id);
+  return (await api.post(`/trilhas/${id}/reenviar`, {}, config)).data;
+}
+
+export async function substituirFotoTrilha(id, fotoId, arquivo, config = {}) {
+  validarId(id); validarId(fotoId);
+  const erro = validarFotosPublicacao([arquivo]);
+  if (erro) throw new Error(erro);
+  const dados = new FormData();
+  dados.append("imagem", arquivo, arquivo.name || "foto");
+  return (await api.put(`/trilhas/${id}/fotos/${fotoId}`, dados, config)).data;
+}
+
+export async function removerFotoTrilha(id, fotoId, config = {}) {
+  validarId(id); validarId(fotoId);
+  await api.delete(`/trilhas/${id}/fotos/${fotoId}`, config);
 }

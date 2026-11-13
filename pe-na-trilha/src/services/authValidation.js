@@ -47,3 +47,11 @@ export function validarCadastro({ nomeCompleto, nomeUsuario, email, senha, aceit
 
   return erros;
 }
+
+export function validarEdicaoPerfil({ nomeCompleto, nomeUsuario, email }) {
+  const erros = {};
+  if (typeof nomeCompleto !== "string" || !nomeCompleto.trim()) erros.nomeCompleto = "Informe seu nome completo.";
+  if (typeof nomeUsuario !== "string" || !validarNomeUsuario(nomeUsuario)) erros.nomeUsuario = "Use somente letras no nome de usuário.";
+  if (typeof email !== "string" || !emailValido.test(email.trim())) erros.email = "Informe um e-mail válido.";
+  return erros;
+}

@@ -68,6 +68,7 @@ export async function abrirChrome(diretorio) {
     return {
       fechar,
       diagnostico: () => diagnosticos.join("\n"),
+      capturar: () => enviar("Page.captureScreenshot", { format: "png" }, sessionId),
       viewport: (width, height = 800) => enviar("Emulation.setDeviceMetricsOverride",
         { width, height, deviceScaleFactor: 1, mobile: false }, sessionId),
       async navegar(url) {

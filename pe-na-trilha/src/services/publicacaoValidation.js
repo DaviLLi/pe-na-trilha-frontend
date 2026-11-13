@@ -59,3 +59,29 @@ export function validarFotosPublicacao(arquivos) {
   }
   return "";
 }
+
+// Permissões exclusivas das telas próprias; o backend continua sendo a autoridade.
+export function permissoesPublicacaoPropria(publicacao, usuario) {
+  const propria = typeof publicacao?.proprietario === "string" && publicacao.proprietario === usuario?._id;
+  return {
+    editar: propria && ["pending", "rejected", "approved"].includes(publicacao.status),
+    fotos: propria && ["pending", "rejected"].includes(publicacao.status),
+    reenviar: propria && publicacao.status === "rejected",
+    excluir: propria,
+  };
+}
+
+export function prepararEdicaoPublicacao(campos, respostas, duracao, original, somenteDetalhes = false) {
+  const dados = {};
+  if (!somenteDetalhes) {
+    for (const chave of ["titulo", "descricao", "endereco"]) {
+      if (campos[chave].trim() !== original[chave]) dados[chave] = campos[chave].trim();
+    }
+  }
+  for (const chave of chavesRespostasTrilha) {
+    const valor = respostas[chave] || null;
+    if (valor !== (original[chave] || null)) dados[chave] = valor;
+  }
+  if (JSON.stringify(duracao) !== JSON.stringify(original.duracao ?? null)) dados.duracao = duracao;
+  return dados;
+}

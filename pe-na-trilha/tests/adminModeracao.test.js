@@ -203,6 +203,6 @@ test("Admin: fila e decisões reais no navegador com backend sintético", {
     });
   } finally {
     for (const fila of [pendentesLista, pendentesFoto, pendentesDecisao]) fila.splice(0).forEach((responder) => responder());
-    try { await chrome?.fechar(); } finally { try { await servidor?.close(); } finally { await rm(temporario, { recursive: true, force: true }); } }
+    try { await chrome?.fechar(); } finally { try { await servidor?.close(); } finally { await rm(temporario, { recursive: true, force: true, maxRetries: 5, retryDelay: 100 }); } }
   }
 });

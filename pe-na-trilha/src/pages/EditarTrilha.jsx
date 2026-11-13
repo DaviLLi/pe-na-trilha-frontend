@@ -1,85 +1,92 @@
+import { useEffect, useRef, useState } from "react";
+import { Link, useParams } from "react-router-dom";
 import { useAuth } from "../contexts/useAuth";
-import { obterPermissoesTrilha } from "../services/trilhaPermissoes.js";
-import { useEffect, useState } from "react";
-import { useNavigate, useParams } from "react-router-dom";
 import TrilhaForm from "../components/TrilhaForm";
-import { obterMensagemErro } from "../services/api";
-import {
-  atualizarTrilha,
-  buscarTrilha,
-} from "../services/trilhasService";
+import GerenciarFotosPublicacao from "../components/GerenciarFotosPublicacao.jsx";
+import { obterMensagemErro } from "../services/api.js";
+import { buscarMinhaTrilha, atualizarTrilha } from "../services/trilhasService.js";
+import { permissoesPublicacaoPropria } from "../services/publicacaoValidation.js";
 
-function EditarTrilha() {
-  const { usuario } = useAuth();
-  const { id } = useParams();
-  const navigate = useNavigate();
+function EditorPublicacao({ id, usuario }) {
   const [trilha, setTrilha] = useState(null);
-  const [carregando, setCarregando] = useState(true);
-  const [enviando, setEnviando] = useState(false);
   const [erro, setErro] = useState("");
+  const [mensagem, setMensagem] = useState("");
+  const [ocupado, setOcupado] = useState(true);
+  const [reconciliada, setReconciliada] = useState(false);
+  const [revisao, setRevisao] = useState(0);
+  const [formulario, setFormulario] = useState(0);
+  const ativo = useRef(false), controle = useRef(null), bloqueio = useRef(false);
 
   useEffect(() => {
-    async function carregarTrilha() {
-      try {
-        const dados = await buscarTrilha(id);
-        setTrilha(dados);
-      } catch (erroRequisicao) {
-        setErro(obterMensagemErro(erroRequisicao));
-      } finally {
-        setCarregando(false);
-      }
-    }
-
-    carregarTrilha();
+    ativo.current = true;
+    const controller = new AbortController(); controle.current = controller;
+    buscarMinhaTrilha(id, { signal: controller.signal }).then((dados) => {
+      if (ativo.current && !controller.signal.aborted) { setTrilha(dados); setReconciliada(true); }
+    }).catch((falha) => {
+      if (ativo.current && !controller.signal.aborted) setErro(obterMensagemErro(falha));
+    }).finally(() => { if (ativo.current && !controller.signal.aborted) setOcupado(false); });
+    return () => { ativo.current = false; controle.current?.abort(); };
   }, [id]);
 
-  const handleSubmit = async (dados) => {
-    if (!trilha || !obterPermissoesTrilha(trilha, usuario).editar) return;
+  async function executar(operacao, sucesso, dados = false) {
+    if (bloqueio.current || !reconciliada) return;
+    bloqueio.current = true; setOcupado(true); setErro(""); setMensagem("");
+    const controller = new AbortController(); controle.current = controller;
+    const atual = () => ativo.current && !controller.signal.aborted;
+    let confirmada = false;
     try {
-      setEnviando(true);
-      setErro("");
-      await atualizarTrilha(id, dados);
-      navigate("/trilhas");
-    } catch (erroRequisicao) {
-      setErro(obterMensagemErro(erroRequisicao));
+      await operacao({ signal: controller.signal });
+      if (!atual()) return;
+      confirmada = true; setMensagem(sucesso);
+    } catch (falha) {
+      if (!atual()) return;
+      setErro(`${obterMensagemErro(falha)} Confira os dados atualizados antes de tentar novamente.`);
     } finally {
-      setEnviando(false);
+      if (atual()) {
+        setReconciliada(false);
+        try {
+          const atualizada = await buscarMinhaTrilha(id, { signal: controller.signal });
+          if (atual()) { setTrilha(atualizada); setReconciliada(true); setRevisao((n) => n + 1); if (dados && confirmada) setFormulario((n) => n + 1); }
+        } catch (falha) {
+          if (atual()) setErro(`${obterMensagemErro(falha)} Não foi possível confirmar o estado atual. Atualize a publicação antes de continuar.`);
+        } finally { if (atual()) { bloqueio.current = false; setOcupado(false); } }
+      }
     }
-  };
+  }
 
-  return (
-    <main className='formPage'>
-      <section className='formCard'>
-        <div className='modalHeader'>
-          <h1>Editar Trilha</h1>
-          <p>Atualize os dados da trilha selecionada.</p>
-        </div>
+  const permissoes = permissoesPublicacaoPropria(trilha, usuario);
+  return <main className="formPage ownerPublicationEditor"><section className="formCard" aria-busy={ocupado}>
+    <div className="modalHeader"><h1>Editar publicação</h1><p>{trilha?.status === "approved" ? "Publicação aprovada: altere somente características e duração." : "Salve as correções. Publicações rejeitadas só voltam à análise após o reenvio explícito no Perfil."}</p></div>
+    {erro ? <p className="storageAlert" role="alert">{erro}</p> : null}
+    {mensagem ? <p role="status">{mensagem}</p> : null}
+    {!trilha && ocupado ? <p role="status">Carregando publicação...</p> : null}
+    {trilha?.motivoRejeicao ? <p className="profileRejection"><strong>Motivo da rejeição:</strong> {trilha.motivoRejeicao}</p> : null}
+    {trilha && !permissoes.editar ? <p role="status">A edição não está disponível para sua conta ou para este estado.</p> : null}
+    {trilha && permissoes.editar ? <>
+      <TrilhaForm key={`${formulario}:${trilha.status}`} modoEdicao incluirDetalhes somenteDetalhes={trilha.status === "approved"} valoresIniciais={trilha} enviando={ocupado || !reconciliada} destinoCancelar="/perfil" textoBotao="Salvar alterações" aoEnviar={(dados) => {
+        if (!Object.keys(dados).length) { setMensagem("Nenhuma alteração para salvar."); return; }
+        executar((config) => atualizarTrilha(id, dados, config), "Alterações salvas. O estado da publicação foi preservado.", true);
+      }} />
+      <GerenciarFotosPublicacao publicacao={trilha} permitido={permissoes.fotos} ocupado={ocupado || !reconciliada} executar={executar} revisao={revisao} />
+    </> : null}
+    {!reconciliada && !ocupado ? <button type="button" onClick={executarAtualizacao}>Atualizar publicação</button> : null}
+    <Link className="secondaryButton formLink" to="/perfil">Voltar ao Perfil</Link>
+  </section></main>;
 
-        {erro ? (
-          <div className='storageAlert' role='alert'>
-            {erro}
-          </div>
-        ) : null}
-
-        {carregando ? <p className='loadingText'>Carregando trilha...</p> : null}
-
-        {!carregando && trilha && !obterPermissoesTrilha(trilha, usuario).editar ? <p role="status">A edição não está disponível para sua conta. A publicação precisa informar autoria ou permissão de edição.</p> : null}
-
-        {!carregando && trilha && obterPermissoesTrilha(trilha, usuario).editar ? (
-          <TrilhaForm
-            valoresIniciais={{
-              titulo: trilha.titulo,
-              descricao: trilha.descricao,
-              endereco: trilha.endereco,
-            }}
-            aoEnviar={handleSubmit}
-            enviando={enviando}
-            textoBotao='Atualizar trilha'
-          />
-        ) : null}
-      </section>
-    </main>
-  );
+  async function executarAtualizacao() {
+    if (bloqueio.current) return;
+    bloqueio.current = true; setOcupado(true);
+    const controller = new AbortController(); controle.current = controller;
+    try {
+      const dados = await buscarMinhaTrilha(id, { signal: controller.signal });
+      if (ativo.current && !controller.signal.aborted) { setTrilha(dados); setReconciliada(true); setErro(""); setRevisao((n) => n + 1); setFormulario((n) => n + 1); }
+    } catch (falha) { if (ativo.current && !controller.signal.aborted) setErro(obterMensagemErro(falha)); }
+    finally { if (ativo.current && !controller.signal.aborted) { bloqueio.current = false; setOcupado(false); } }
+  }
 }
 
-export default EditarTrilha;
+export default function EditarTrilha() {
+  const { usuario } = useAuth();
+  const { id } = useParams();
+  return usuario?._id ? <EditorPublicacao key={`${usuario._id}:${id}`} id={id} usuario={usuario} /> : <p role="status">Entre na sua conta para editar suas publicações.</p>;
+}

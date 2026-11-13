@@ -6,6 +6,7 @@ import {
 } from "../services/api.js";
 import {
   buscarUsuarioAutenticado,
+  atualizarUsuarioAtual,
   loginUsuario as solicitarLogin,
   logoutUsuario,
   obterTokenCsrf,
@@ -85,6 +86,14 @@ export function AuthProvider({ children }) {
     return dadosUsuario;
   }, []);
 
+  const atualizarPerfil = useCallback(async (dados, config = {}) => {
+    const atualizado = await atualizarUsuarioAtual(dados, config);
+    if (!config.signal?.aborted) {
+      setUsuario((atual) => atual?._id === atualizado._id ? atualizado : atual);
+    }
+    return atualizado;
+  }, []);
+
   const valor = useMemo(
     () => ({
       usuario,
@@ -94,9 +103,10 @@ export function AuthProvider({ children }) {
       login,
       logout,
       consultarUsuario,
+      atualizarPerfil,
       tentarRestaurarSessao: carregarSessao,
     }),
-    [usuario, carregandoSessao, erroRestauracao, login, logout, consultarUsuario, carregarSessao],
+    [usuario, carregandoSessao, erroRestauracao, login, logout, consultarUsuario, atualizarPerfil, carregarSessao],
   );
 
   return <AuthContext.Provider value={valor}>{children}</AuthContext.Provider>;

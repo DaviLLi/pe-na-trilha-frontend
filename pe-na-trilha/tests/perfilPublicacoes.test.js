@@ -138,7 +138,9 @@ test("Perfil: publicações próprias e ciclo de vida das imagens privadas no na
       const conteudo = await texto();
       for (const rotulo of ["Pendente", "Aprovada", "Rejeitada", "Corrigir localização.", "Foto indisponível"]) assert.ok(conteudo.includes(rotulo));
       assert.equal(await chrome.avaliar("document.querySelectorAll('.profilePostCard').length"), 3);
-      assert.equal(await chrome.avaliar("document.querySelectorAll('.profilePostCard button, .profilePostCard a').length"), 0);
+      assert.equal(await chrome.avaliar("document.querySelectorAll('.profilePostCard .ownerPublicationActions a').length"), 3);
+      assert.equal(await chrome.avaliar("document.querySelectorAll('.profilePostCard .ownerPublicationActions button').length"), 4);
+      assert.equal(await chrome.avaliar("[...document.querySelectorAll('.profilePostCard button')].filter(b => b.textContent === 'Reenviar para aprovação').length"), 1);
       assert.match(conteudo, /Carregando foto/);
       pendentesFoto.shift()(); await prontas(3);
       const requests = requisicoes.filter((r) => r.url.includes("/conteudo"));

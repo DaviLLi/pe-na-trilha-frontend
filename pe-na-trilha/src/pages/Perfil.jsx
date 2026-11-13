@@ -1,3 +1,5 @@
+import { useState } from "react";
+import EditarPerfil from "../components/EditarPerfil.jsx";
 import PublicacoesPerfil from "../components/PublicacoesPerfil.jsx";
 import MedalhaPerfil from "../components/MedalhaPerfil";
 import { calcularMedalha } from "../data/niveisMedalhas.js";
@@ -6,6 +8,7 @@ import { useAuth } from "../contexts/useAuth";
 
 function Perfil() {
   const { usuario } = useAuth();
+  const [editando, setEditando] = useState(false);
   const conquista = calcularMedalha(usuario?.trilhasAprovadas);
   const nome = usuario?.nomeCompleto || "Nome não informado";
   const nomeUsuario = usuario?.nomeUsuario;
@@ -23,10 +26,11 @@ function Perfil() {
           {nomeUsuario ? <p className="profileHandle">@{nomeUsuario}</p> : null}
         </div>
         <div className="profileEditGroup">
-          <button className="secondaryButton profileEdit" type="button" disabled title="A API ainda não oferece edição de perfil">Editar perfil</button>
-          <span>A edição de perfil ainda não está disponível.</span>
+          <button className="secondaryButton profileEdit" type="button" disabled={!usuario?._id} aria-expanded={editando} aria-controls="editar-perfil" onClick={() => setEditando((atual) => !atual)}>Editar perfil</button>
         </div>
       </section>
+
+      {editando && usuario?._id ? <EditarPerfil key={usuario._id} aoCancelar={() => setEditando(false)} /> : null}
 
       <section className="profileOverview" aria-label="Informações do perfil">
         <div className="profileInfoCard">
