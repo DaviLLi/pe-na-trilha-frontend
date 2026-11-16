@@ -779,3 +779,86 @@ body:has(.authPage) { background: radial-gradient(ellipse at 14% 24%, rgba(44, 1
 body { font-size: 1.15rem; }
 
 .postPhoto .photoCount { z-index: 3; left: .6rem; right: auto; bottom: .6rem; pointer-events: none; }
+
+/* Confirmação do cadastro: o registro e os envios têm estados independentes. */
+.newPostPage.publicationCompletePage { grid-template-columns: minmax(0, 1fr); max-width: 800px; }
+.publicationCompletePage .formCard { padding: clamp(1.25rem, 4vw, 2.4rem); }
+.publicationResult { display: grid; gap: 1.4rem; min-width: 0; }
+.publicationResultEmblem { display: grid; place-items: center; width: 64px; height: 64px; border: 1px solid #347d60; border-radius: 50%; background: #123d2b; color: #87e2b8; }
+.publicationResultEmblem svg { width: 34px; height: 34px; fill: none; stroke: currentColor; stroke-width: 1.5; stroke-linecap: round; stroke-linejoin: round; }
+.publicationResultUncertain .publicationResultEmblem { border-color: #7e6a3d; background: #302a19; color: #e4ca89; }
+.publicationResultHeader h1 { margin: .35rem 0 .7rem; max-width: 28ch; color: var(--product-text); font: 700 clamp(1.5rem, 3vw, 2rem)/1.25 var(--font-display); }
+.publicationResultHeader p { margin: 0; color: var(--product-muted); font-size: .95rem; line-height: 1.65; }
+.publicationPendingNote { display: flex; align-items: flex-start; gap: .75rem; padding: 1rem; border: 1px solid #52613b; border-radius: .75rem; background: #20291b; }
+.publicationPendingDot { flex: 0 0 auto; width: 9px; height: 9px; margin-top: .4rem; border-radius: 50%; background: #cfb76b; }
+.publicationPendingNote strong { color: #e1d6aa; font-size: .9rem; }
+.publicationPendingNote p { margin: .35rem 0 0; color: #b8bda6; font-size: .85rem; line-height: 1.6; }
+.publicationPhotoReceipt { min-width: 0; padding: 1rem; border: 1px solid var(--product-line); border-radius: .75rem; background: #0d1813; }
+.publicationPhotoReceiptTitle { display: flex; align-items: center; gap: .6rem; }
+.publicationPhotoReceiptTitle > svg { flex: 0 0 auto; width: 22px; height: 22px; fill: none; stroke: #71cfa7; stroke-width: 1.6; }
+.publicationPhotoReceiptTitle h2 { flex: 1; margin: 0; font: 600 .95rem/1.4 var(--font-display); }
+.publicationPhotoReceiptTitle > span { color: #93cdb4; font-size: .8rem; white-space: nowrap; }
+.publicationUploadSummary { margin: .65rem 0 0; color: var(--product-muted); font-size: .85rem; line-height: 1.6; }
+.publicationResult .publicationPhotoReceipt ul { gap: 0; padding: 0; margin: .75rem 0 0; list-style: none; }
+.publicationPhotoReceipt li { display: grid; grid-template-columns: 28px minmax(0, 1fr) auto; align-items: center; gap: .7rem; padding: .8rem 0; border-top: 1px solid var(--product-line); }
+.publicationPhotoNumber { color: #7eaa96; font: 600 .75rem var(--font-body); }
+.publicationFileInfo { display: grid; gap: .2rem; min-width: 0; }
+.publicationFileInfo strong { color: var(--product-text); font-size: .82rem; }
+.publicationFileInfo > span { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; color: var(--product-muted); font-size: .72rem; }
+.publicationUploadState { color: #a8b8ae; font-size: .75rem; text-align: right; }
+.publicationPhotoReceipt [data-envio="Envio confirmado"] .publicationUploadState { color: #81d8af; }
+.publicationPhotoReceipt [data-envio="Envio não confirmado"] .publicationUploadState { color: #e2a296; }
+.publicationResult .publicationResultLink { flex: 0 0 auto; justify-content: center; gap: .8rem; min-height: 48px; padding: .8rem 1rem; font-size: .9rem; }
+.publicationResultLink[aria-disabled="true"] { opacity: .55; cursor: wait; }
+.publicationResultHint { color: var(--product-muted); font-size: .78rem; text-align: center; }
+
+/* A foto é ajustada dentro da edição de perfil, sem formulários aninhados. */
+.profilePhotoSection { margin-top: 1.8rem; padding-top: 1.4rem; border-top: 1px solid var(--product-line); }
+.profilePhotoHeading h3 { margin: 0; font: 600 1.1rem var(--font-display); }
+.profilePhotoHeading p { color: var(--product-muted); font-size: .85rem; line-height: 1.6; }
+.avatarFilePicker { position: relative; display: flex; flex-wrap: wrap; align-items: center; gap: .7rem; }
+.avatarFilePicker > label { display: inline-flex; align-items: center; justify-content: center; min-height: 44px; padding: .55rem .9rem; font: 600 .85rem var(--font-body); cursor: pointer; }
+.avatarFilePicker > input { position: absolute; width: 1px; height: 1px; padding: 0; border: 0; clip-path: inset(50%); overflow: hidden; }
+.avatarFilePicker:focus-within > label { outline: 2px solid var(--product-green-hover); outline-offset: 3px; }
+.avatarFilePicker:has(input:disabled) > label { opacity: .55; cursor: wait; }
+.avatarFilePicker > span, .avatarCropHelp { color: var(--product-muted); font-size: .8rem; line-height: 1.6; }
+.avatarCropEditor { display: grid; gap: 1rem; justify-items: center; padding: 1.1rem; border: 1px solid var(--product-line); border-radius: .75rem; background: #0b1611; }
+.avatarCropFrame { width: min(100%, 280px); aspect-ratio: 1; overflow: hidden; border: 2px solid #68bc98; border-radius: 50%; background: #10281c; }
+.avatarCropCanvas { display: block; width: 100%; height: 100%; border-radius: 50%; cursor: grab; touch-action: none; }
+.avatarCropCanvas:active { cursor: grabbing; }
+.avatarCropHelp { max-width: 38ch; margin: 0; text-align: center; }
+.avatarCropControls { box-sizing: border-box; display: grid; gap: .9rem; width: min(100%, 420px); margin: 0; padding: 0; border: 0; }
+.avatarCropControls legend { margin-bottom: .75rem; color: var(--product-text); font-size: .88rem; font-weight: 600; }
+.avatarCropControls label { display: grid; gap: .4rem; min-width: 0; }
+.avatarCropControls label > span { display: flex; justify-content: space-between; gap: .5rem; font-size: .8rem; color: var(--product-muted); }
+.profileEditPanel .avatarCropControls input[type="range"] { width: 100%; height: 32px; min-height: 32px; margin: 0; padding: 0; border: 0; accent-color: var(--product-green); cursor: pointer; }
+.avatarCropReset { justify-self: start; min-height: 40px; padding: .4rem 0; border: 0; background: transparent; color: var(--product-green-hover); font: 600 .8rem var(--font-body); text-decoration: underline; text-underline-offset: .25rem; cursor: pointer; }
+.profilePhotoActions { display: flex; flex-wrap: wrap; gap: .7rem; }
+.profilePhotoActions button { min-height: 44px; padding: .65rem 1rem; border: 1px solid var(--product-line); border-radius: .65rem; font: 600 .85rem var(--font-body); cursor: pointer; }
+.profilePhotoActions button:disabled { opacity: .55; cursor: wait; }
+.avatarCropReset:focus-visible, .profilePhotoActions button:focus-visible { outline: 2px solid var(--product-green-hover); outline-offset: 3px; }
+
+/* Miniaturas nunca são esticadas; detalhe continua sob demanda na galeria. */
+.postPhoto { display: flex; align-items: center; justify-content: center; }
+.postPhoto img { width: auto; height: auto; max-width: 100%; max-height: 100%; object-fit: contain; }
+.adminPage .adminDecisionButtons button { min-height: 44px; padding: .7rem 1.05rem; border-radius: .65rem; }
+@media (max-width: 480px) {
+  .publicationPhotoReceipt { padding: .85rem; }
+  .publicationPhotoReceipt li { grid-template-columns: 24px minmax(0, 1fr); gap: .3rem .6rem; }
+  .publicationUploadState { grid-column: 2; text-align: left; }
+  .publicationResult .publicationResultLink { width: 100%; }
+  .avatarCropEditor { padding: .8rem; }
+  .profilePhotoActions button { flex: 1 1 auto; }
+}
+
+.postPhoto img { position: absolute; inset: 0; margin: auto; }
+
+.publicationResultLink > svg { width: 18px; height: 18px; fill: none; stroke: currentColor; stroke-width: 1.8; stroke-linecap: round; stroke-linejoin: round; }
+
+.avatarFilePicker > label { box-sizing: border-box; }
+.profilePostPhoto { max-width: 480px; }
+.profilePostPhoto img { position: absolute; inset: 0; margin: auto; width: auto; height: auto; max-width: 100%; max-height: 100%; object-fit: contain; }
+
+/* Prévia do Feed em tamanho intermediário, sem a área vazia excessiva. */
+.postPhoto:not(.postPhotoEmpty) { max-width: 640px; margin-inline: auto; }
+.postPhoto img { width: 100%; height: 100%; aspect-ratio: auto; object-fit: contain; }

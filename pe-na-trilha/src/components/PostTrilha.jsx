@@ -40,6 +40,7 @@ function TrashIcon() {
 // de sincronização e sem herdar uma falha da imagem anterior.
 function FotoDoFeed({ url, titulo, quantidade, aoAbrir }) {
   const [estado, setEstado] = useState("carregando");
+  const [limite, setLimite] = useState(null);
   const falhou = estado === "erro";
   return (
     <figure className="postPhoto" aria-busy={estado === "carregando"}>
@@ -54,7 +55,12 @@ function FotoDoFeed({ url, titulo, quantidade, aoAbrir }) {
             width="1600"
             height="800"
             loading="lazy"
-            onLoad={() => setEstado("carregada")}
+            style={limite ? { maxWidth: limite.largura, maxHeight: limite.altura } : undefined}
+            onLoad={(evento) => {
+              // Uma ampliação moderada na prévia, sem preencher cartões enormes.
+              setLimite({ largura: evento.currentTarget.naturalWidth * 1.4, altura: evento.currentTarget.naturalHeight * 1.4 });
+              setEstado("carregada");
+            }}
             onError={() => setEstado("erro")}
           />
           {estado === "carregando" ? <figcaption className="postPhotoStatus" role="status">Carregando foto...</figcaption> : null}

@@ -75,7 +75,7 @@ test("Cadastro: formulário e multipart reais no navegador com API sintética", 
       modo.hold = true; await montar(); await preencher(); await selecionar(5);
       await chrome.avaliar("(()=>{const form=document.querySelector('form');form.requestSubmit();form.requestSubmit();})()");
       await esperar(() => pendentes.length === 1, "cadastro pendente"); assert.equal(requests.length, 1);
-      pendentes.shift()(); await esperar(async () => (await texto()).includes("5 foto(s) com envio confirmado"), "cinco fotos");
+      pendentes.shift()(); await esperar(async () => (await texto()).includes("5 fotos com envio confirmado"), "cinco fotos");
       assert.equal(requests.length, 6);
       for (let i = 0; i < 5; i++) {
         const req = requests[i + 1]; assert.equal(req.url, `/trilhas/${id}/fotos`); assert.equal(req.method, "POST");
@@ -86,7 +86,7 @@ test("Cadastro: formulário e multipart reais no navegador com API sintética", 
     await t.test("falha parcial preserva cadastro e sucesso anterior, interrompendo restantes", async () => {
       modo.falhaFoto = 2; await montar(); await preencher(); await selecionar(3); await enviar();
       await esperar(async () => (await texto()).includes("Falha no envio da foto."), "falha parcial");
-      assert.equal(requests.length, 3); assert.match(await texto(), /1 foto\(s\) com envio confirmado/);
+      assert.equal(requests.length, 3); assert.match(await texto(), /1 foto com envio confirmado/);
       assert.match(await texto(), /Envio não confirmado/); assert.match(await texto(), /Envio não iniciado/);
       assert.equal(await chrome.avaliar("document.querySelector('form')===null"), true);
     });

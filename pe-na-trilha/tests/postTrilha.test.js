@@ -213,6 +213,6 @@ test("PostTrilha: integração visual das fotos públicas em navegador", {
   } finally {
     respostasPendentes.splice(0).forEach((responder) => responder());
     await chrome?.fechar(); await servidor?.close();
-    await rm(temporario, { recursive: true, force: true });
+    await rm(temporario, { recursive: true, force: true, maxRetries: 5, retryDelay: 100 });
   }
 });

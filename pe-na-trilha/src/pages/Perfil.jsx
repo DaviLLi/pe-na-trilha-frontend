@@ -1,5 +1,4 @@
 import { useCallback, useState } from "react";
-import EditorFotoPerfil from "../components/EditorFotoPerfil.jsx";
 import EditarPerfil from "../components/EditarPerfil.jsx";
 import PublicacoesPerfil from "../components/PublicacoesPerfil.jsx";
 import MedalhaPerfil from "../components/MedalhaPerfil";
@@ -9,7 +8,6 @@ import { useAuth } from "../contexts/useAuth";
 
 function Perfil() {
   const { usuario } = useAuth();
-  const [editandoFoto, setEditandoFoto] = useState(false);
   const [editando, setEditando] = useState(false);
   const [estatisticas, setEstatisticas] = useState(null);
   const usuarioId = usuario?._id;
@@ -37,11 +35,9 @@ function Perfil() {
         </div>
         <div className="profileEditGroup">
           <button className="secondaryButton profileEdit" type="button" disabled={!usuario?._id} aria-expanded={editando} aria-controls="editar-perfil" onClick={() => setEditando((atual) => !atual)}>Editar perfil</button>
-          <button className="secondaryButton profileEdit" type="button" disabled={!usuario?._id} aria-expanded={editandoFoto} aria-controls="editar-foto-perfil" onClick={() => setEditandoFoto((atual) => !atual)}>Alterar foto</button>
         </div>
       </section>
 
-      {editandoFoto && usuario?._id ? <EditorFotoPerfil key={usuario._id} aoFechar={() => setEditandoFoto(false)} /> : null}
       {editando && usuario?._id ? <EditarPerfil key={usuario._id} aoCancelar={() => setEditando(false)} /> : null}
 
       <section className="profileOverview" aria-label="Informações do perfil">

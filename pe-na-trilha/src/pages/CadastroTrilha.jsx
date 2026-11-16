@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from "react";
-import { Link } from "react-router-dom";
+import ResultadoPublicacao from "../components/ResultadoPublicacao.jsx";
 import SelecionarFotosPublicacao from "../components/SelecionarFotosPublicacao.jsx";
 import TrilhaForm from "../components/TrilhaForm";
 import { useAuth } from "../contexts/useAuth";
@@ -84,35 +84,29 @@ function FormularioCadastro() {
   }
 
   return (
-    <main className="formPage newPostPage">
+    <main className={`formPage newPostPage${resultado ? " publicationCompletePage" : ""}`}>
       <section className="formCard" aria-busy={enviando}>
-        <div className="modalHeader">
+        {!resultado ? <div className="modalHeader">
           <span className="pageEyebrow">Compartilhe com a comunidade</span>
           <h1>Nova publicação</h1>
           <p>Registre o percurso e suas características para orientar quem pretende visitá-lo.</p>
-        </div>
+        </div> : null}
         {erro ? <p className="storageAlert" role="alert">{erro}</p> : null}
         {resultado ? (
-          <section className="publicationResult" aria-label="Resultado do cadastro">
-            <h2>{resultado === "criada" ? "Publicação cadastrada como pendente" : "Cadastro sem confirmação"}</h2>
-            <p>{resultado === "criada" ? "Sua publicação aguarda análise administrativa. Acompanhe o estado atual no Perfil." : "Consulte suas publicações antes de tentar cadastrar novamente."}</p>
-            {envios.length ? <ul aria-label="Envio das fotos">{envios.map((envio, indice) => <li key={indice}><span>{envio.nome}</span><strong>{envio.estado}</strong></li>)}</ul> : null}
-            <p role="status">{enviando ? "Enviando fotos… Aguarde a conclusão." : `${envios.filter((envio) => envio.estado === "Envio confirmado").length} foto(s) com envio confirmado.`}</p>
-            <Link className="secondaryButton formLink" to="/perfil" aria-disabled={enviando} onClick={(evento) => { if (enviando) evento.preventDefault(); }}>Ver minhas publicações</Link>
-          </section>
+          <ResultadoPublicacao resultado={resultado} envios={envios} enviando={enviando} />
         ) : (
           <TrilhaForm incluirDetalhes aoEnviar={cadastrar} enviando={enviando} textoBotao="Cadastrar publicação">
             <SelecionarFotosPublicacao fotos={fotos} aoAlterar={setFotos} desabilitado={enviando} erro={erroFotos} aoErro={setErroFotos} id="fotos-publicacao" />
           </TrilhaForm>
         )}
       </section>
-      <aside className="newPostAside">
+      {!resultado ? <aside className="newPostAside">
         <span className="newPostAsideIcon" aria-hidden="true">⌁</span>
         <span className="pageEyebrow">Um bom registro</span>
         <h2>Informação clara faz diferença na trilha.</h2>
         <p>Preencha título, descrição e localização. As características e a duração são opcionais.</p>
         <div className="newPostFieldHint"><strong>Antes de aparecer no Feed</strong><span>A publicação será analisada pela administração.</span></div>
-      </aside>
+      </aside> : null}
     </main>
   );
 }
