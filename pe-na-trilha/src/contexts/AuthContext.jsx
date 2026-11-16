@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
+import { enviarFotoPerfil } from "../services/fotoPerfilService.js";
 import AuthContext from "./authContextValue.js";
 import {
   definirTokenCsrf,
@@ -6,6 +7,7 @@ import {
 } from "../services/api.js";
 import {
   buscarUsuarioAutenticado,
+  atualizarUsuarioAtual,
   loginUsuario as solicitarLogin,
   logoutUsuario,
   obterTokenCsrf,
@@ -85,6 +87,21 @@ export function AuthProvider({ children }) {
     return dadosUsuario;
   }, []);
 
+  const atualizarPerfil = useCallback(async (dados, config = {}) => {
+    const atualizado = await atualizarUsuarioAtual(dados, config);
+    if (!config.signal?.aborted) {
+      setUsuario((atual) => atual?._id === atualizado._id ? atualizado : atual);
+    }
+    return atualizado;
+  }, []);
+
+  const usuarioId = usuario?._id;
+  const atualizarFotoPerfil = useCallback(async (arquivo, config = {}) => {
+    const resultado = await enviarFotoPerfil(arquivo, config);
+    if (!config.signal?.aborted) setUsuario((atual) => atual?._id === usuarioId ? { ...atual, fotoPerfil: resultado.fotoPerfil } : atual);
+    return resultado;
+  }, [usuarioId]);
+
   const valor = useMemo(
     () => ({
       usuario,
@@ -94,9 +111,11 @@ export function AuthProvider({ children }) {
       login,
       logout,
       consultarUsuario,
+      atualizarPerfil,
+      atualizarFotoPerfil,
       tentarRestaurarSessao: carregarSessao,
     }),
-    [usuario, carregandoSessao, erroRestauracao, login, logout, consultarUsuario, carregarSessao],
+    [usuario, carregandoSessao, erroRestauracao, login, logout, consultarUsuario, atualizarPerfil, atualizarFotoPerfil, carregarSessao],
   );
 
   return <AuthContext.Provider value={valor}>{children}</AuthContext.Provider>;

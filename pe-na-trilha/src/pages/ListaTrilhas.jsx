@@ -12,6 +12,7 @@ import {
 
 function ListaTrilhas() {
   const { usuario } = useAuth();
+  const [versao, setVersao] = useState(0);
   const [trilhas, setTrilhas] = useState([]);
   const [carregando, setCarregando] = useState(true);
   const [erro, setErro] = useState("");
@@ -33,22 +34,31 @@ function ListaTrilhas() {
     const controller = new AbortController();
 
     async function carregarTrilhas() {
+      setCarregando(true);
       try {
         const dados = await listarTrilhas({ signal: controller.signal });
+        if (!Array.isArray(dados)) throw new Error("Resposta de publicações inválida.");
+        if (controller.signal.aborted) return;
         setTrilhas(dados);
         setErro("");
       } catch (erroRequisicao) {
-        if (!axios.isCancel(erroRequisicao)) {
+        if (!controller.signal.aborted && !axios.isCancel(erroRequisicao)) {
           setErro(obterMensagemErro(erroRequisicao));
         }
       } finally {
-        setCarregando(false);
+        if (!controller.signal.aborted) setCarregando(false);
       }
     }
 
     carregarTrilhas();
 
     return () => controller.abort();
+  }, [versao]);
+
+  useEffect(() => {
+    const atualizar = () => { if (document.visibilityState === "visible") setVersao((atual) => atual + 1); };
+    window.addEventListener("focus", atualizar);document.addEventListener("visibilitychange", atualizar);
+    return () => { window.removeEventListener("focus", atualizar);document.removeEventListener("visibilitychange", atualizar); };
   }, []);
 
   const handleExcluir = async (trilha) => {
@@ -94,6 +104,7 @@ function ListaTrilhas() {
           </label>
         </div>
 
+        <button className="profileRefreshButton" type="button" disabled={carregando} onClick={() => setVersao((atual) => atual + 1)}>Atualizar Feed</button>
         {erro ? (
           <div className='storageAlert' role='alert'>
             {erro}

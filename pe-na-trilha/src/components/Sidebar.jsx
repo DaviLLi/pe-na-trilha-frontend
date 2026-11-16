@@ -39,11 +39,17 @@ function Sidebar() {
     }
   };
 
+  if (!usuario?._id) return null;
+
   return (
     <aside className="productSidebar">
       <NavLink className="productBrand" to="/trilhas" aria-label="Pé na Trilha — início">
         <img src={logo} alt="" />
         <span>PÉ NA<br />TRILHA</span>
+      </NavLink>
+      <NavLink className="sidebarAccount" to="/perfil" aria-label="Meu perfil">
+        {usuario.fotoPerfil ? <img src={usuario.fotoPerfil} alt="Foto do seu perfil" /> : <span className="sidebarAvatarFallback" aria-hidden="true">{(usuario.nomeCompleto || "P").charAt(0)}</span>}
+        <span>{usuario.nomeCompleto || "Meu perfil"}</span>
       </NavLink>
       <nav className="productNav" aria-label="Navegação principal">
         {links.map(({ to, label, mobileLabel, icon }) => (
@@ -51,6 +57,11 @@ function Sidebar() {
             <NavIcon name={icon} /><span className="productNavLabel">{label}</span><span className="productNavShortLabel">{mobileLabel}</span>
           </NavLink>
         ))}
+        {usuario?.perfil === "admin" ? (
+          <NavLink to="/admin" title="Administração" aria-label="Administração" className={({ isActive }) => isActive ? "productNavLink active" : "productNavLink"}>
+            <NavIcon name="medal" /><span className="productNavLabel">Administração</span><span className="productNavShortLabel">Admin</span>
+          </NavLink>
+        ) : null}
         {usuario ? (
           <button className="productNavLink desktopAuthLink" type="button" onClick={sair}><NavIcon name="logout" />Sair</button>
         ) : (

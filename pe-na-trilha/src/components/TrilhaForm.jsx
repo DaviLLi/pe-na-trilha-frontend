@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { Link } from "react-router-dom";
 import DuracaoSeletor from "./DuracaoSeletor";
-import { alterarResposta, prepararPublicacao, validarPublicacao } from "../services/publicacaoValidation.js";
+import { alterarResposta, prepararPublicacao, prepararEdicaoPublicacao, validarPublicacao } from "../services/publicacaoValidation.js";
 import { caracteristicasPorLocal, perguntasTrilha } from "../data/detalhesTrilha.js";
 
 const camposVazios = { titulo: "", descricao: "", endereco: "" };
@@ -25,10 +25,14 @@ function TrilhaForm({
   textoBotao = "Salvar trilha",
   incluirDetalhes = false,
   envioIndisponivel = false,
+  children,
+  modoEdicao = false,
+  somenteDetalhes = false,
+  destinoCancelar = "/trilhas",
 }) {
   const [campos, setCampos] = useState(() => ({ ...camposVazios, ...valoresIniciais }));
-  const [respostas, setRespostas] = useState(respostasVazias);
-  const [duracao, setDuracao] = useState(null);
+  const [respostas, setRespostas] = useState(() => Object.fromEntries(Object.keys(respostasVazias).map((chave) => [chave, modoEdicao ? valoresIniciais[chave] || "" : ""])));
+  const [duracao, setDuracao] = useState(() => modoEdicao ? valoresIniciais.duracao ?? null : null);
   const [erros, setErros] = useState({});
 
   const handleChange = (evento) => {
@@ -56,14 +60,16 @@ function TrilhaForm({
 
   const handleSubmit = (evento) => {
     evento.preventDefault();
-    if (envioIndisponivel || !aoEnviar) return;
-    const novosErros = validarPublicacao(campos, incluirDetalhes ? duracao : null);
+    if (envioIndisponivel || enviando || !aoEnviar) return;
+    const novosErros = validarPublicacao(somenteDetalhes ? { titulo: "ok", descricao: "ok", endereco: "ok" } : campos, incluirDetalhes ? duracao : null);
     setErros(novosErros);
     if (Object.keys(novosErros).length) {
       evento.currentTarget.querySelector(`#${Object.keys(novosErros)[0]}`)?.focus();
       return;
     }
-    aoEnviar(prepararPublicacao(campos, incluirDetalhes ? respostas : null, duracao));
+    aoEnviar(modoEdicao
+      ? prepararEdicaoPublicacao(campos, respostas, duracao, valoresIniciais, somenteDetalhes)
+      : prepararPublicacao(campos, incluirDetalhes ? respostas : null, duracao));
   };
 
   return (
@@ -71,19 +77,19 @@ function TrilhaForm({
       {Object.keys(erros).length ? <div className="storageAlert" role="alert">{Object.values(erros).join(" ")}</div> : null}
       <div className="formField">
         <label htmlFor="titulo">Título <span className="requiredMark">Obrigatório</span></label>
-        <input id="titulo" name="titulo" type="text" placeholder="Ex: Trilha da Pedra Grande ao amanhecer" aria-describedby="titulo-ajuda" value={campos.titulo} required autoComplete="off" disabled={enviando} onChange={handleChange} />
+        <input id="titulo" name="titulo" type="text" placeholder="Ex: Trilha da Pedra Grande ao amanhecer" aria-describedby="titulo-ajuda" value={campos.titulo} required autoComplete="off" disabled={enviando || somenteDetalhes} onChange={handleChange} />
         <small id="titulo-ajuda">Dê um nome pelo qual outras pessoas reconheçam o percurso.</small>
       </div>
 
       <div className="formField">
         <label htmlFor="descricao">Descrição <span className="requiredMark">Obrigatória</span></label>
-        <textarea id="descricao" name="descricao" placeholder="Conte como é a trilha e quais são suas principais características." aria-describedby="descricao-ajuda" value={campos.descricao} required rows={5} disabled={enviando} onChange={handleChange} />
+        <textarea id="descricao" name="descricao" placeholder="Conte como é a trilha e quais são suas principais características." aria-describedby="descricao-ajuda" value={campos.descricao} required rows={5} disabled={enviando || somenteDetalhes} onChange={handleChange} />
         <small id="descricao-ajuda">Conte o que você sabe sobre a trilha de forma clara e direta.</small>
       </div>
 
       <div className="formField">
         <label htmlFor="endereco">Localização <span className="requiredMark">Obrigatória</span></label>
-        <input id="endereco" name="endereco" type="text" placeholder="Ex: Estrada da Serra, Atibaia - SP" aria-describedby="endereco-ajuda" value={campos.endereco} required autoComplete="street-address" disabled={enviando} onChange={handleChange} />
+        <input id="endereco" name="endereco" type="text" placeholder="Ex: Estrada da Serra, Atibaia - SP" aria-describedby="endereco-ajuda" value={campos.endereco} required autoComplete="street-address" disabled={enviando || somenteDetalhes} onChange={handleChange} />
         <small id="endereco-ajuda">Informe o endereço ou ponto de acesso ao percurso.</small>
       </div>
 
@@ -136,13 +142,15 @@ function TrilhaForm({
         </section>
       ) : null}
 
+      {children}
+
       <div className="modalButtons">
         {envioIndisponivel ? (
           <button className="primaryButton" type="button" disabled title="Aguardando suporte da API">Aguardando suporte da API</button>
         ) : (
           <button className="primaryButton" type="submit" disabled={enviando}>{enviando ? "Salvando..." : textoBotao}</button>
         )}
-        <Link className="secondaryButton formLink" to="/trilhas">Cancelar</Link>
+        <Link className="secondaryButton formLink" to={destinoCancelar}>Cancelar</Link>
       </div>
     </form>
   );

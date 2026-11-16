@@ -90,7 +90,7 @@ body:has(.authPage) {
   gap: 0.75rem;
   color: #f5f6ee;
   font-family: var(--font-display);
-  font-size: 1.05rem;
+  font-size: 1.2075rem;
   text-decoration: none;
 }
 
@@ -118,7 +118,7 @@ body:has(.authPage) {
   align-items: center;
   gap: 0.55rem;
   color: #94c9a0;
-  font-size: 0.69rem;
+  font-size: 0.7935rem;
   font-weight: 800;
   letter-spacing: 0.13em;
   line-height: 1.5;
@@ -137,7 +137,7 @@ body:has(.authPage) {
   margin: 1.3rem 0 1rem;
   color: #f5f7ef;
   font-family: var(--font-display);
-  font-size: clamp(2.45rem, 4vw, 3.55rem);
+  font-size: clamp(2.8175rem, 4.6vw, 4.0825rem);
   font-weight: 600;
   letter-spacing: -0.065em;
   line-height: 1.02;
@@ -147,7 +147,7 @@ body:has(.authPage) {
   max-width: 24rem;
   margin: 0;
   color: rgba(229, 237, 227, 0.71);
-  font-size: 0.96rem;
+  font-size: 1.104rem;
   line-height: 1.75;
 }
 
@@ -156,7 +156,7 @@ body:has(.authPage) {
   align-items: center;
   gap: 0.85rem;
   color: rgba(229, 237, 227, 0.65);
-  font-size: 0.62rem;
+  font-size: 0.713rem;
   font-weight: 700;
   letter-spacing: 0.12em;
 }
@@ -173,7 +173,7 @@ body:has(.authPage) {
   right: 2rem;
   bottom: 2rem;
   color: rgba(229, 237, 227, 0.36);
-  font-size: 0.6rem;
+  font-size: 0.69rem;
   letter-spacing: 0.12em;
 }
 
@@ -193,21 +193,21 @@ body:has(.authPage) {
 
 .authStep {
   color: #83bd8f;
-  font-size: 0.62rem;
+  font-size: 0.713rem;
 }
 
 .authFormHeading h2 {
   margin: 0.6rem 0 0.35rem;
   color: #f4f6ee;
   font-family: var(--font-display);
-  font-size: 2rem;
+  font-size: 2.3rem;
   letter-spacing: -0.055em;
 }
 
 .authFormHeading p {
   margin: 0;
   color: #9ba79f;
-  font-size: 0.88rem;
+  font-size: 1.012rem;
 }
 
 .authForm {
@@ -223,7 +223,7 @@ body:has(.authPage) {
   display: grid;
   gap: 0.48rem;
   color: #dfe6de;
-  font-size: 0.78rem;
+  font-size: 0.897rem;
   font-weight: 700;
 }
 
@@ -237,7 +237,7 @@ body:has(.authPage) {
   outline: none;
   background: rgba(5, 11, 8, 0.46);
   color: #f4f6ee;
-  font: 500 0.88rem var(--font-body);
+  font: 500 1.012rem var(--font-body);
   transition: border-color 160ms ease, box-shadow 160ms ease, background 160ms ease;
 }
 
@@ -266,7 +266,7 @@ body:has(.authPage) {
 
 .authField small {
   color: #d6978e;
-  font-size: 0.7rem;
+  font-size: 0.805rem;
   font-weight: 500;
   line-height: 1.45;
 }
@@ -287,12 +287,12 @@ body:has(.authPage) {
   background: #92d49d;
   color: #102017;
   cursor: pointer;
-  font: 800 0.85rem var(--font-body);
+  font: 800 0.9775rem var(--font-body);
   transition: background 160ms ease, transform 160ms ease, box-shadow 160ms ease;
 }
 
 .authSubmit span {
-  font-size: 1.15rem;
+  font-size: 1.3225rem;
   transition: transform 160ms ease;
 }
 
@@ -321,7 +321,7 @@ body:has(.authPage) {
 .authSwitch {
   margin: 1.55rem 0 0;
   color: #9ba79f;
-  font-size: 0.8rem;
+  font-size: 0.92rem;
   text-align: center;
 }
 
@@ -344,7 +344,7 @@ body:has(.authPage) {
   border-radius: 9px;
   background: rgba(115, 45, 39, 0.2);
   color: #f0aaa1;
-  font-size: 0.79rem;
+  font-size: 0.9085rem;
   line-height: 1.5;
 }
 
@@ -357,7 +357,7 @@ body:has(.authPage) {
 .authFooter {
   margin-top: 1.3rem;
   color: rgba(198, 213, 199, 0.38);
-  font-size: 0.58rem;
+  font-size: 0.667rem;
   font-weight: 700;
   letter-spacing: 0.16em;
   text-align: center;
@@ -405,7 +405,7 @@ body:has(.authPage) {
     margin-bottom: 1.6rem;
     color: #f5f6ee;
     font-family: var(--font-display);
-    font-size: 0.98rem;
+    font-size: 1.127rem;
   }
 
   .authPanelMobileBrand img {
@@ -443,7 +443,7 @@ body:has(.authPage) {
   }
 
   .authStoryCopy h1 {
-    font-size: 2.3rem;
+    font-size: 2.645rem;
   }
 
   .authFooter {

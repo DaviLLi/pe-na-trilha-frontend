@@ -2,6 +2,8 @@ import { useAuth } from "../contexts/useAuth";
 import { obterPermissoesTrilha } from "../services/trilhaPermissoes.js";
 import { useState } from "react";
 import { Link } from "react-router-dom";
+import { obterUrlImagemPublica } from "../services/imagensPublicacoesService.js";
+import GaleriaPublicacao from "./GaleriaPublicacao.jsx";
 import DetalhesTrilha from "./DetalhesTrilha.jsx";
 
 function EditIcon() {
@@ -34,13 +36,53 @@ function TrashIcon() {
   );
 }
 
+// A chave pela URL reinicia os eventos/estado quando muda a foto, sem efeitos
+// de sincronização e sem herdar uma falha da imagem anterior.
+function FotoDoFeed({ url, titulo, quantidade, aoAbrir }) {
+  const [estado, setEstado] = useState("carregando");
+  const [limite, setLimite] = useState(null);
+  const falhou = estado === "erro";
+  return (
+    <figure className="postPhoto" aria-busy={estado === "carregando"}>
+      <button className="photoOpenControl" type="button" aria-label={`Ampliar fotos de ${titulo}`} onClick={aoAbrir}><span>Ampliar ↗</span></button>
+      {falhou ? (
+        <figcaption className="postPhotoStatus" role="status">Não foi possível carregar a foto.</figcaption>
+      ) : (
+        <>
+          <img
+            src={url}
+            alt={`Paisagem da trilha ${titulo}`}
+            width="1600"
+            height="800"
+            loading="lazy"
+            style={limite ? { maxWidth: limite.largura, maxHeight: limite.altura } : undefined}
+            onLoad={(evento) => {
+              // Uma ampliação moderada na prévia, sem preencher cartões enormes.
+              setLimite({ largura: evento.currentTarget.naturalWidth * 1.4, altura: evento.currentTarget.naturalHeight * 1.4 });
+              setEstado("carregada");
+            }}
+            onError={() => setEstado("erro")}
+          />
+          {estado === "carregando" ? <figcaption className="postPhotoStatus" role="status">Carregando foto...</figcaption> : null}
+          {quantidade > 1 ? <span className="photoCount">{quantidade} fotos</span> : null}
+        </>
+      )}
+    </figure>
+  );
+}
+
 function PostTrilha({ trilha, onDelete, excluindo }) {
   const { usuario } = useAuth();
+  const [galeria, setGaleria] = useState(false);
   const permissoes = obterPermissoesTrilha(trilha, usuario);
-  const fotoDestaque = trilha.fotos?.[0]?.url;
-  const [urlComFalha, setUrlComFalha] = useState(null);
-  const fotoFalhou = urlComFalha === fotoDestaque;
-  const mostrarFoto = Boolean(fotoDestaque) && !fotoFalhou;
+  const fotoDestaque = trilha.fotos?.[0];
+  let urlFoto = null;
+  try {
+    urlFoto = obterUrlImagemPublica(fotoDestaque?.url, { variante: "miniatura" });
+  } catch {
+    // DTO antigo, contexto privado ou configuração inválida não derrubam o Feed
+    // e nunca são usados como src alternativo ou registrados em logs.
+  }
 
   return (
     <article className='post'>
@@ -80,23 +122,15 @@ function PostTrilha({ trilha, onDelete, excluindo }) {
         <DetalhesTrilha trilha={trilha} />
       </div>
 
-      <figure className={mostrarFoto ? "postPhoto" : "postPhoto postPhotoEmpty"}>
-        {mostrarFoto ? (
-          <img
-            src={fotoDestaque}
-            alt={`Paisagem da trilha ${trilha.titulo}`}
-            width="1600"
-            height="800"
-            loading="lazy"
-            onError={() => setUrlComFalha(fotoDestaque)}
-          />
-        ) : (
-          <figcaption>{fotoFalhou ? "Foto indisponível" : "Nenhuma foto cadastrada"}</figcaption>
-        )}
-        {mostrarFoto && trilha.fotos?.length > 1 ? (
-          <span className='photoCount'>{trilha.fotos.length} fotos</span>
-        ) : null}
-      </figure>
+      {urlFoto ? (
+        <FotoDoFeed key={urlFoto} url={urlFoto} titulo={trilha.titulo} quantidade={trilha.fotos.length} aoAbrir={() => setGaleria(true)} />
+      ) : (
+        <figure className="postPhoto postPhotoEmpty">
+          {trilha.fotos?.length ? <button className="photoOpenControl" type="button" aria-label={`Ampliar fotos de ${trilha.titulo}`} onClick={() => setGaleria(true)}><span>Ver fotos ↗</span></button> : null}
+          <figcaption>{fotoDestaque ? "Foto indisponível" : "Nenhuma foto cadastrada"}</figcaption>
+        </figure>
+      )}
+      {galeria && trilha.fotos?.length ? <GaleriaPublicacao fotos={trilha.fotos} titulo={trilha.titulo} contexto="publico" aoFechar={() => setGaleria(false)} /> : null}
     </article>
   );
 }

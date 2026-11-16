@@ -1,5 +1,5 @@
 import Medalha from "./Medalha";
-import { calcularMedalha } from "../data/niveisMedalhas.js";
+import { calcularMedalha, niveisMedalhas } from "../data/niveisMedalhas.js";
 
 export default function MedalhaPerfil({ quantidadeAprovada, carregando = false }) {
   const conquista = calcularMedalha(quantidadeAprovada);
@@ -12,7 +12,7 @@ export default function MedalhaPerfil({ quantidadeAprovada, carregando = false }
         <>
           <div className="profileMedalValue">
             <Medalha nivel={conquista.atual.medalha} width="64" height="64" />
-            <div><strong>{conquista.atual.nivel}</strong><span>{conquista.atual.titulo}</span></div>
+            <div><strong>{conquista.atual.nivel}</strong><span>{conquista.atual.titulo}</span><span>Nível {niveisMedalhas.indexOf(conquista.atual) + 1} de {niveisMedalhas.length}</span></div>
           </div>
           <p className="medalCount">{conquista.quantidade} {conquista.quantidade === 1 ? "trilha aprovada" : "trilhas aprovadas"}</p>
           {conquista.proxima ? (
