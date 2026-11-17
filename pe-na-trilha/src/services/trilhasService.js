@@ -23,6 +23,7 @@ export async function atualizarTrilha(id, dados, config = {}) {
 
 export async function excluirTrilha(id, config = {}) {
   await api.delete(`/trilhas/${id}`, config);
+  if (typeof window !== "undefined") window.dispatchEvent(new Event("publicacoes:atualizadas"));
 }
 
 export async function listarMinhasTrilhas(config = {}) {

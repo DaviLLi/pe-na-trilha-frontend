@@ -1,3 +1,4 @@
+import DataPublicacao from "./DataPublicacao.jsx";
 import axios from "axios";
 import { useEffect, useRef, useState } from "react";
 import { Link } from "react-router-dom";
@@ -89,8 +90,8 @@ export default function PublicacoesPerfil({ aoAtualizar } = {}) {
 
   useEffect(() => {
     const atualizar = () => { if (!operacao.current && document.visibilityState === "visible") setVersao((atual) => atual + 1); };
-    window.addEventListener("focus", atualizar);document.addEventListener("visibilitychange", atualizar);
-    return () => { window.removeEventListener("focus", atualizar);document.removeEventListener("visibilitychange", atualizar); };
+    window.addEventListener("publicacoes:atualizadas", atualizar);window.addEventListener("focus", atualizar);document.addEventListener("visibilitychange", atualizar);
+    return () => { window.removeEventListener("publicacoes:atualizadas", atualizar);window.removeEventListener("focus", atualizar);document.removeEventListener("visibilitychange", atualizar); };
   }, []);
   const selecionada = galeria ? publicacoes.find((p) => p._id === galeria.id) : null;
 
@@ -117,7 +118,7 @@ export default function PublicacoesPerfil({ aoAtualizar } = {}) {
   if (!publicacoes.length) return <div className="profilePostsEmpty" role="status">
     {mensagem ? <p>{mensagem}</p> : null}
     {falhaAcao ? <p role="alert">{falhaAcao}</p> : null}
-    <span aria-hidden="true">＋</span><strong>Nenhuma publicação ainda</strong><p>Suas contribuições aparecerão aqui.</p>
+    <Link to="/trilhas/nova" aria-label="Adicionar publicação"><span aria-hidden="true">＋</span></Link><strong>Nenhuma publicação ainda</strong><p>Suas contribuições aparecerão aqui.</p>
   </div>;
   return <div className="profilePostList">
     <button className="profileRefreshButton" type="button" disabled={ocupada} onClick={() => setVersao((atual) => atual + 1)}>Atualizar publicações</button>
@@ -127,6 +128,7 @@ export default function PublicacoesPerfil({ aoAtualizar } = {}) {
       <header className="profilePostHeader"><h3>{publicacao.titulo}</h3>
         <span className="profilePostStatus" data-status={publicacao.status}>{Object.hasOwn(ESTADOS, publicacao.status) ? ESTADOS[publicacao.status] : "Estado não informado"}</span>
       </header>
+      <DataPublicacao createdAt={publicacao.createdAt} />
       <p>{publicacao.descricao}</p><p className="profilePostAddress">{publicacao.endereco}</p>
       <DetalhesTrilha trilha={publicacao} />
       {typeof publicacao.motivoRejeicao === "string" && publicacao.motivoRejeicao.trim() ?

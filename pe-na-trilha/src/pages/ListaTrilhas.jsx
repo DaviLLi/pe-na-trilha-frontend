@@ -1,7 +1,7 @@
 import { useAuth } from "../contexts/useAuth";
 import { obterPermissoesTrilha } from "../services/trilhaPermissoes.js";
 import axios from "axios";
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
 import { Link } from "react-router-dom";
 import PostTrilha from "../components/PostTrilha";
 import { obterMensagemErro } from "../services/api";
@@ -12,6 +12,19 @@ import {
 
 function ListaTrilhas() {
   const { usuario } = useAuth();
+  const introducao = useRef(null);
+  const pagina = useRef(null);
+  useLayoutEffect(() => {
+    const intro = introducao.current;
+    const atualizar = () => {
+      const busca = intro.querySelector(".trailSearch");
+      pagina.current?.style.setProperty("--guide-offset", `${busca.getBoundingClientRect().top - intro.getBoundingClientRect().top}px`);
+    };
+    atualizar();
+    const observer = new ResizeObserver(atualizar);
+    observer.observe(intro);
+    return () => observer.disconnect();
+  }, []);
   const [versao, setVersao] = useState(0);
   const [trilhas, setTrilhas] = useState([]);
   const [carregando, setCarregando] = useState(true);
@@ -57,8 +70,8 @@ function ListaTrilhas() {
 
   useEffect(() => {
     const atualizar = () => { if (document.visibilityState === "visible") setVersao((atual) => atual + 1); };
-    window.addEventListener("focus", atualizar);document.addEventListener("visibilitychange", atualizar);
-    return () => { window.removeEventListener("focus", atualizar);document.removeEventListener("visibilitychange", atualizar); };
+    window.addEventListener("publicacoes:atualizadas", atualizar);window.addEventListener("focus", atualizar);document.addEventListener("visibilitychange", atualizar);
+    return () => { window.removeEventListener("publicacoes:atualizadas", atualizar);window.removeEventListener("focus", atualizar);document.removeEventListener("visibilitychange", atualizar); };
   }, []);
 
   const handleExcluir = async (trilha) => {
@@ -80,13 +93,14 @@ function ListaTrilhas() {
       setErro(obterMensagemErro(erroRequisicao));
     } finally {
       setIdExcluindo("");
+      setVersao((atual) => atual + 1);
     }
   };
 
   return (
-    <main className='layout feedPage'>
+    <main className='layout feedPage' ref={pagina}>
       <section className='feed' aria-live='polite'>
-        <div className='feedIntro'>
+        <div className='feedIntro' ref={introducao}>
           <div>
             <span className='feedEyebrow'>Explore ao ar livre</span>
             <h1>Encontre sua próxima trilha</h1>

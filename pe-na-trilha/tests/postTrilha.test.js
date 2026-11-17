@@ -135,6 +135,7 @@ test("PostTrilha: integração visual das fotos públicas em navegador", {
       assert.equal(requisicoes.length, antes);
     });
     await t.test("erro preserva área e proporção do carregamento e sucesso no desktop e mobile", async () => {
+      modos.delete(caminho());modos.delete(caminho(outraFotoId));
       for (const largura of [1280, 390]) {
         await chrome.viewport(largura);
         const foto = largura === 1280 ? fotoErroId : "000000000000000000000007";
@@ -193,6 +194,22 @@ test("PostTrilha: integração visual das fotos públicas em navegador", {
         }
       }
       await chrome.avaliar("delete window.imagemOriginal");
+    });
+    await t.test("autor e ampliação preservam o carrossel em desktop e celular", async () => {
+      modos.delete(caminho());modos.delete(caminho(outraFotoId));
+      for (const largura of [1280, 390]) {
+        await chrome.viewport(largura);
+        await render({ ...publicacao([{ _id: fotoId, url: caminho() }, { _id: outraFotoId, url: caminho(outraFotoId) }]), autor: { nomeCompleto: "Ana Silva", nomeUsuario: "ana" } });
+        await esperar(() => chrome.avaliar("Boolean(document.querySelector('.photoOpenControl'))"), "controle de ampliação");
+        assert.match(await chrome.avaliar("document.querySelector('.postAuthor').textContent"), /Ana Silva.*@ana/);
+        await chrome.avaliar("document.querySelector('.photoOpenControl').click()");
+        await esperar(() => chrome.avaliar("Boolean(document.querySelector('dialog[open]'))"), "galeria aberta");
+        await chrome.avaliar("document.querySelector('.galleryNavigation button:last-child').click()");
+        await esperar(() => chrome.avaliar("document.querySelector('.galleryHeader').textContent.includes('2 de 2')"), "segunda foto");
+        await chrome.avaliar("document.querySelector('[aria-label=\"Fechar fotos\"]').click()");
+        await esperar(() => chrome.avaliar("!document.querySelector('dialog')"), "galeria fechada");
+        assert.equal(await chrome.avaliar("document.querySelector('.carouselControls span').textContent"), "1 de 2");
+      }
     });
     await t.test("desmontagem durante carregamento não recria cartão nem dispara novas requisições", async () => {
       const foto = "000000000000000000000006", antes = requisicoes.length;

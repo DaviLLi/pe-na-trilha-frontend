@@ -389,3 +389,12 @@
     font-size: 1.3455rem;
   }
 }
+
+.postAuthor { display: flex; align-items: center; gap: 10px; margin: 0 0 14px; min-width: 0; }
+.postAuthor img, .postAuthorAvatar { width: 36px; height: 36px; border-radius: 50%; object-fit: cover; flex-shrink: 0; }
+.postAuthorAvatar { display: grid; place-items: center; background: #e9efe7; color: #36563d; }
+.postAuthor > div { min-width: 0; }
+.postAuthor strong, .postAuthor > div > span { display: block; overflow-wrap: anywhere; }
+.postAuthor strong { font-size: .875rem; }
+.postAuthor > div > span { font-size: .75rem; color: #657368; }
+.postPhoto { position: relative; }

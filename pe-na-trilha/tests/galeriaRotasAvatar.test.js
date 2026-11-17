@@ -60,7 +60,7 @@ test("Aplicação real: galeria, avatar persistido e rotas por sessão/papel com
         if (path === "/trilhas/pendentes") { json(usuario.perfil === "admin" ? 200 : 403, usuario.perfil === "admin" ? db.filter((p) => p.status === "pending").map((p) => dto(p, "admin")) : { mensagem: "Acesso negado." });return; }
         if (path === "/trilhas" && req.method === "GET") { json(200, db.filter((p) => p.status === "approved").map((p) => dto(p, "publico")));return; }
         if (path === "/trilhas" && req.method === "POST") { const data = JSON.parse(body), nova = { ...data, _id: id(proximoPost++), status: "pending", proprietario: usuario._id, fotos: [] };db.push(nova);json(201, dto(nova, "autor"));return; }
-        const item = db.find((p) => p._id === path.split("/")[2]);
+        const item = db.find((p) => p._id === path.split("/")[path.startsWith("/trilhas/minhas/") ? 3 : 2]);
         if (path.endsWith("/fotos") && req.method === "POST" && item) { const foto = { _id: id(9000 + item.fotos.length), updatedAt: "2026-11-13T13:00:00Z" };item.fotos.push(foto);json(201, dto(item, "autor").fotos.at(-1));return; }
         if (path.endsWith("/moderacao") && item) { item.status = JSON.parse(body).status;json(200, dto(item, "admin"));return; }
         if (path.startsWith("/trilhas/minhas/") && item) { json(200, dto(item, "autor"));return; }
@@ -83,6 +83,49 @@ test("Aplicação real: galeria, avatar persistido e rotas por sessão/papel com
     async function captura(nome) { if (process.env.PNT_VISUAL_CAPTURE_DIR) await writeFile(join(process.env.PNT_VISUAL_CAPTURE_DIR, nome + ".png"), Buffer.from((await chrome.capturar()).data, "base64")); }
     t.afterEach(async () => { await fechar();await chrome.avaliar("ocultar()");await esperar(() => chrome.avaliar("document.querySelector('main')===null"), "desmontagem");pendentes.splice(0).forEach((fn) => fn());requests.length = 0;modo = {};logado = true;usuario = { ...pessoa };db = []; });
 
+    await t.test("matriz responsiva das telas principais", async () => {
+      const resultados = [];
+      usuario.perfil = "admin";
+      db = [post(1, "approved"), post(2, "pending")];
+      db[0].createdAt = "2026-11-10T15:35:00Z";
+      db[0].autor = { nomeCompleto: "Pessoa da Trilha", nomeUsuario: "pessoa" };
+      for (const largura of [320,375,390,430,768,1024,1280]) {
+        await chrome.viewport(largura, 1000);
+        for (const [nome, pagina, pronto] of [["feed","/trilhas",".post"],["perfil","/perfil",".profilePostCard"],["nova","/trilhas/nova",".trilhaForm"],["edicao",`/trilhas/${id(2)}/editar`,".trilhaForm"],["admin","/admin",".adminDecisionButtons"]]) {
+          await abrir(pagina);await esperar(() => chrome.avaliar(`Boolean(document.querySelector('${pronto}'))`), nome);
+          if (nome === "perfil") await esperar(() => chrome.avaliar("Boolean(document.querySelector('.profileMedalValue'))"),"medalha");
+          const medir = async (tela) => {
+            await chrome.avaliar("document.fonts.ready");
+            const m = await chrome.avaliar(`(()=>{const sels=['main','.post','.profileCover','.profileIdentity','.formCard','.productSidebar','.trailSearch','.guideCard','.profileRefreshButton'];return {overflow:document.documentElement.scrollWidth>document.documentElement.clientWidth,excedentes:[...document.querySelectorAll('main *')].filter(e=>{const r=e.getBoundingClientRect();return r.width&&r.right>document.documentElement.clientWidth+1}).map(e=>e.className).slice(0,10),geometria:Object.fromEntries(sels.map(s=>{const e=document.querySelector(s),r=e?.getBoundingClientRect();return [s,r?{x:r.x,y:r.y,w:r.width,h:r.height}:null]}))};})()`);
+            resultados.push({ largura, tela, ...m });await captura(`matriz-${tela}-${largura}`);
+            if (!process.env.PNT_RESP_BASELINE) assert.equal(m.overflow,false,`${tela} ${largura}: ${m.excedentes}`);
+          };
+          await medir(nome);
+          if (nome === "perfil") { await clicar("Editar perfil");await esperar(()=>chrome.avaliar("Boolean(document.querySelector('#editar-perfil input'))"),"editor");await medir("editar-perfil"); }
+          if (nome === "feed") {
+            if (!process.env.PNT_RESP_BASELINE) {
+              const alinhamento = await chrome.avaliar("(()=>{const r=s=>document.querySelector(s).getBoundingClientRect().toJSON();return {post:r('.post'),atualizar:r('.profileRefreshButton'),busca:r('.trailSearch'),guia:r('.guideCard')};})()");
+              assert.ok(Math.abs(alinhamento.post.x-alinhamento.atualizar.x)<1,JSON.stringify({largura,...alinhamento}));assert.ok(Math.abs(alinhamento.post.width-alinhamento.atualizar.width)<1);
+              if(largura>860) assert.ok(Math.abs(alinhamento.busca.y-alinhamento.guia.y)<1);
+            }
+            await esperar(()=>chrome.avaliar("Boolean(document.querySelector('.post .photoOpenControl'))"),"foto");await chrome.avaliar("document.querySelector('.post .photoOpenControl').click()");await modal("1 de 2");await fotoPronta();await medir("galeria");await fechar();
+          }
+        }
+      }
+      if(process.env.PNT_VISUAL_CAPTURE_DIR) await writeFile(join(process.env.PNT_VISUAL_CAPTURE_DIR,"medidas.json"), JSON.stringify(resultados,null,2));
+    });
+    await t.test("datas reais e cores automáticas da medalha", async () => {
+      db = [post(1)];db[0].createdAt = "2026-11-10T15:35:00Z";db[0].updatedAt = "2026-11-17T18:00:00Z";
+      await abrir("/trilhas");await esperar(()=>chrome.avaliar("Boolean(document.querySelector('time'))"),"data");
+      assert.equal(await chrome.avaliar("document.querySelector('time').dateTime"),"2026-11-10T15:35:00.000Z");
+      assert.equal(await chrome.avaliar("document.querySelector('time').textContent"),await chrome.avaliar("new Intl.DateTimeFormat('pt-BR',{day:'2-digit',month:'short',year:'numeric'}).format(new Date('2026-11-10T15:35:00Z'))+' · '+new Intl.DateTimeFormat('pt-BR',{hour:'2-digit',minute:'2-digit'}).format(new Date('2026-11-10T15:35:00Z'))"));
+      for(const valor of [undefined,null,"", "inválida"]) { db[0].createdAt=valor;await abrir("/trilhas");await esperar(()=>chrome.avaliar("Boolean(document.querySelector('.post'))"),"post sem data");assert.equal(await chrome.avaliar("document.querySelector('time')===null"),true); }
+      for(const [quantidade,medalha] of [[0,"transparente"],[1,"verde"],[16,"bronze"],[31,"prata"],[50,"ouro"]]) {
+        db=Array.from({length:quantidade},(_,i)=>({...post(i+1,"approved",0)}));await abrir("/perfil");
+        await esperar(()=>chrome.avaliar(`document.querySelector('.profileCover')?.dataset.medalha==='${medalha}'`),medalha);
+        await captura(`banner-${medalha}`);
+      }
+    });
     await t.test("visitante é redirecionado em URLs internas diretas; documentos e cadastro permanecem públicos", async () => {
       logado = false;
       for (const path of ["/trilhas", "/perfil", "/trilhas/nova", `/trilhas/${id(1)}/editar`, "/admin", "/ajuda", "/medalhas", "/"]) {
@@ -97,9 +140,9 @@ test("Aplicação real: galeria, avatar persistido e rotas por sessão/papel com
       await abrir("/admin");await esperar(() => chrome.avaliar("location.pathname==='/trilhas'"), "admin bloqueado");assert.equal(requests.some((r) => r.url === "/trilhas/pendentes"), false);assert.equal(await chrome.avaliar("document.querySelector('[aria-label=Administração]')===null"), true);for (const largura of [1280, 390]) { await chrome.viewport(largura, 1000);await captura(`usuario-comum-${largura}`); }
       usuario.perfil = "admin";await abrir("/admin");await esperar(async () => (await texto()).includes("Nenhuma publicação pendente"), "admin autorizado");assert.equal(await chrome.avaliar("Boolean(document.querySelector('[aria-label=Administração]'))"), true);for (const largura of [1280, 390]) { await chrome.viewport(largura, 1000);await captura(`administrador-${largura}`); }
     });
-    await t.test("Feed navega dentro do cartão com detalhe ativo, sem modal ou botão Ampliar", async () => {
+    await t.test("Feed navega dentro do cartão e abre ampliação somente ao clicar", async () => {
       db = [post(1, "approved", 3)];await chrome.viewport(1280, 1000);await abrir("/trilhas");await esperar(() => chrome.avaliar("Boolean(document.querySelector('.postPhoto img')?.naturalWidth)"), "Feed");
-      assert.equal(await chrome.avaliar("document.querySelector('dialog,.post .photoOpenControl')===null"),true);
+      assert.equal(await chrome.avaliar("document.querySelector('dialog')===null && Boolean(document.querySelector('.post .photoOpenControl'))"),true);
       assert.match(await chrome.avaliar("document.querySelector('.postPhoto img').src"),/variante=detalhe$/);
       assert.equal(requests.filter(r=>r.url.endsWith('variante=detalhe')).length,1);
       await chrome.avaliar("document.querySelector('.carouselControls [aria-label=\"Próxima foto\"]').click();true");
@@ -108,6 +151,10 @@ test("Aplicação real: galeria, avatar persistido e rotas por sessão/papel com
       await esperar(()=>chrome.avaliar("document.querySelector('.carouselControls span')?.textContent==='1 de 3'"),"teclado");
       const medidas=await chrome.avaliar("(()=>{const p=document.querySelector('.post').getBoundingClientRect(),f=document.querySelector('.feed').getBoundingClientRect();return {razao:p.width/f.width,centro:Math.abs(p.left+p.width/2-f.left-f.width/2)};})()");
       assert.ok(Math.abs(medidas.razao-.75)<.01);assert.ok(medidas.centro<1);await captura('feed-carrossel-desktop');
+      await chrome.avaliar("document.querySelector('.post .photoOpenControl').click();true");await modal("1 de 3");await fotoPronta();
+      await chrome.pressionarTecla('ArrowRight');await modal("2 de 3");await chrome.pressionarTecla('Escape');
+      await esperar(()=>chrome.avaliar("!document.querySelector('dialog')"),"fechamento por Escape");
+      assert.equal(await chrome.avaliar("document.querySelector('.carouselControls span').textContent"),"1 de 3");
     });
     await t.test("carrossel aceita deslize real e preserva rolagem vertical no celular", async () => {
       db=[post(1,'approved',3)];await chrome.viewport(390,844);await abrir('/trilhas');await esperar(()=>chrome.avaliar("Boolean(document.querySelector('.postPhoto img')?.naturalWidth)"),'Feed');

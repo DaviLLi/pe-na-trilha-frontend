@@ -16,10 +16,10 @@ const post = (n, status, fotos = []) => ({ _id: id(n), proprietario: usuario._id
 const entrada = `
 import React from 'react';import {createRoot} from 'react-dom/client';import {MemoryRouter,Routes,Route} from 'react-router-dom';
 import AuthContext from '/src/contexts/authContextValue.js';import api,{definirTokenCsrf} from '/src/services/api.js';
-import Perfil from '/src/pages/Perfil.jsx';import EditarTrilha from '/src/pages/EditarTrilha.jsx';import '/src/styles/product.css';
+import ListaTrilhas from '/src/pages/ListaTrilhas.jsx';import CadastroTrilha from '/src/pages/CadastroTrilha.jsx';import Perfil from '/src/pages/Perfil.jsx';import EditarTrilha from '/src/pages/EditarTrilha.jsx';import '/src/styles/product.css';
 api.defaults.baseURL=location.origin;definirTokenCsrf('csrf-sintetico');
 const root=createRoot(document.getElementById('root'));let seq=0;
-window.abrir=(pagina,usuario)=>root.render(React.createElement(MemoryRouter,{initialEntries:[pagina],key:++seq},React.createElement(AuthContext.Provider,{value:{usuario}},React.createElement(Routes,null,React.createElement(Route,{path:'/perfil',element:React.createElement(Perfil)}),React.createElement(Route,{path:'/trilhas/:id/editar',element:React.createElement(EditarTrilha)})))));
+window.abrir=(pagina,usuario)=>root.render(React.createElement(MemoryRouter,{initialEntries:[pagina],key:++seq},React.createElement(AuthContext.Provider,{value:{usuario}},React.createElement(Routes,null,React.createElement(Route,{path:'/trilhas',element:React.createElement(ListaTrilhas)}),React.createElement(Route,{path:'/trilhas/nova',element:React.createElement(CadastroTrilha)}),React.createElement(Route,{path:'/perfil',element:React.createElement(Perfil)}),React.createElement(Route,{path:'/trilhas/:id/editar',element:React.createElement(EditarTrilha)})))));
 window.ocultar=()=>root.render(null);window.confirma=true;window.confirm=()=>window.confirma;
 window.urls={criadas:[],revogadas:[]};const criar=URL.createObjectURL.bind(URL),revogar=URL.revokeObjectURL.bind(URL);
 URL.createObjectURL=(blob)=>{const url=criar(blob);window.urls.criadas.push(url);return url;};URL.revokeObjectURL=(url)=>{window.urls.revogadas.push(url);return revogar(url);};
@@ -44,6 +44,7 @@ test("Gerenciamento próprio real no navegador com API exclusivamente sintética
         const request = { url: req.url, method: req.method, body, headers: req.headers };requests.push(request);
         const json = (status, data) => { if (res.destroyed) return;res.statusCode = status;res.setHeader("Content-Type", "application/json");res.end(status === 204 ? undefined : JSON.stringify(data)); };
         if (path.endsWith("/conteudo")) { if (!res.destroyed) { res.setHeader("Content-Type", "image/webp");res.end(pixel); }return; }
+        if (path === "/trilhas" && req.method === "GET") { json(200, db.filter((p) => p.status === "approved").map((p) => ({ ...p, fotos: p.fotos.map((f) => ({ ...f, url: f.url.replace("/trilhas/minhas/", "/trilhas/") })) })));return; }
         if (path === "/trilhas/minhas") { json(200, db);return; }
         if (path.startsWith("/trilhas/minhas/")) { if (modo.falhaConsulta) { json(500, { mensagem: "Consulta indisponível." });return; }const item = db.find((p) => p._id === path.split("/")[3]);json(item ? 200 : 404, item || { mensagem: "Publicação não encontrada." });return; }
         const partes = path.split("/"), item = db.find((p) => p._id === partes[2]);
@@ -82,6 +83,32 @@ test("Gerenciamento próprio real no navegador com API exclusivamente sintética
     const mutacoes = () => requests.filter((r) => r.method !== "GET");
     t.afterEach(async () => { await chrome.avaliar("ocultar()");await esperar(() => chrome.avaliar("document.querySelector('main')===null"), "desmontagem");pendentes.splice(0).forEach((fn) => fn());modo = {};requests.length = 0;await chrome.avaliar("window.confirma=true"); });
 
+    await t.test("perfil vazio navega ao formulário em desktop e celular", async () => {
+      db = [];
+      for (const largura of [1280, 390]) {
+        await chrome.viewport(largura);await abrir();
+        await esperar(() => chrome.avaliar("Boolean(document.querySelector('[aria-label=\"Adicionar publicação\"]'))"), "adicionar");
+        await chrome.avaliar("document.querySelector('[aria-label=\"Adicionar publicação\"]').click()");
+        await esperar(() => chrome.avaliar("Boolean(document.querySelector('.trilhaForm'))"), "formulário novo");
+      }
+    });
+    await t.test("exclusão por Perfil e Feed com e sem fotos persiste ao remontar ambas as listas", async () => {
+      for (const pagina of ["/perfil", "/trilhas"]) for (const comFotos of [false, true]) {
+        db = [post(1, "approved", comFotos ? [foto(1, 10), foto(1, 11)] : []), { ...post(2, "approved"), proprietario: id(88) }];
+        await abrir(pagina);
+        const seletor = pagina === "/perfil" ? ".ownerDeleteButton" : ".deleteBtn";
+        await esperar(() => chrome.avaliar(`Boolean(document.querySelector('${seletor}'))`), "excluir disponível");
+        assert.equal(await chrome.avaliar(`document.querySelectorAll('${seletor}').length`), 1);
+        await chrome.avaliar(`document.querySelector('${seletor}').click()`);
+        await esperar(() => db.length === 1, "exclusão recebida");
+        await esperar(async () => !(await texto()).includes("Publicação 1"), "lista reconciliada");
+        for (const destino of ["/trilhas", "/perfil"]) {
+          await abrir(destino);await esperar(() => chrome.avaliar("!document.getElementById('root').textContent.includes('Carregando')"), "consulta nova");
+          assert.doesNotMatch(await texto(), /Publicação 1/);
+          assert.match(await texto(), /Publicação 2/);
+        }
+      }
+    });
     await t.test("Perfil apresenta ações por estado e impede edição de registros de terceiros", async () => {
       db = [post(1, "pending"), post(2, "rejected"), post(3, "approved"), { ...post(4, "pending"), proprietario: id(88) }];await abrir();
       await esperar(() => chrome.avaliar("document.querySelectorAll('.profilePostCard').length===4"), "lista");

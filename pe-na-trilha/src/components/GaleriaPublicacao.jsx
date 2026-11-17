@@ -48,6 +48,7 @@ export default function GaleriaPublicacao({ fotos, titulo, contexto, inicial = 0
   }, []);
   const mudar = (passo) => setIndice((atual) => Math.max(0, Math.min(fotos.length - 1, atual + passo)));
   return createPortal(<dialog className="publicationGallery" ref={dialogo} aria-label={`Fotos de ${titulo}`} onCancel={(evento) => { evento.preventDefault();aoFechar(); }} onKeyDown={(evento) => {
+    evento.stopPropagation();
     if (evento.key === "ArrowRight") { evento.preventDefault();mudar(1); }
     if (evento.key === "ArrowLeft") { evento.preventDefault();mudar(-1); }
     if (evento.key === "Escape") { evento.preventDefault();aoFechar(); }

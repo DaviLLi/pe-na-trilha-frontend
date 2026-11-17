@@ -1,12 +1,14 @@
 import { useRef, useState } from "react";
+import GaleriaPublicacao from "./GaleriaPublicacao.jsx";
 import { obterUrlImagemPublica } from "../services/imagensPublicacoesService.js";
 
 function resolver(foto, variante) {
   try { return obterUrlImagemPublica(foto?.url, { variante }); } catch { return null; }
 }
-function FotoAtiva({ url, titulo }) {
+function FotoAtiva({ url, titulo, aoAbrir }) {
   const [estado, setEstado] = useState("carregando");
   return <figure className="postPhoto" aria-busy={Boolean(url) && estado === "carregando"}>
+    {url && estado === "pronta" ? <button className="photoOpenControl" type="button" aria-label={`Ampliar foto de ${titulo}`} onClick={aoAbrir}><span>Ampliar ↗</span></button> : null}
     {url && estado !== "erro" ? <img src={url} alt={`Paisagem da trilha ${titulo}`} loading="lazy" draggable="false" onLoad={() => setEstado("pronta")} onError={() => setEstado("erro")} /> : null}
     {!url ? <figcaption className="postPhotoStatus">Foto indisponível</figcaption> : estado !== "pronta" ? <figcaption className="postPhotoStatus" role="status">{estado === "erro" ? "Não foi possível carregar a foto." : "Carregando foto..."}</figcaption> : null}
   </figure>;
@@ -21,6 +23,8 @@ function Vizinha({ foto, lado, selecionar }) {
 export default function CarrosselPost({ fotos, titulo }) {
   const [indice, setIndice] = useState(0);
   const inicio = useRef(null);
+  const gesto = useRef(false);
+  const [ampliada, setAmpliada] = useState(null);
   const atual = Math.min(indice, fotos.length - 1);
   const mudar = (passo) => setIndice((valor) => Math.max(0, Math.min(fotos.length - 1, Math.min(valor, fotos.length - 1) + passo)));
   if (!fotos.length) return <figure className="postPhoto postPhotoEmpty"><figcaption>Nenhuma foto cadastrada</figcaption></figure>;
@@ -30,6 +34,7 @@ export default function CarrosselPost({ fotos, titulo }) {
   }}>
     <div className={`carouselStage${fotos.length === 1 ? " carouselSingle" : ""}`} onPointerDown={(e) => {
       if (!e.isPrimary || e.button !== 0) return;
+      gesto.current = false;
       inicio.current = { x: e.clientX, y: e.clientY, id: e.pointerId };
       // O gesto horizontal não interfere na rolagem vertical do Feed.
     }} onPointerMove={(e) => {
@@ -39,12 +44,13 @@ export default function CarrosselPost({ fotos, titulo }) {
       const i = inicio.current;inicio.current = null;
       if (!i || i.id !== e.pointerId) return;
       const x = e.clientX - i.x, y = e.clientY - i.y;
-      if (Math.abs(x) > 45 && Math.abs(x) > Math.abs(y) * 1.3) { e.preventDefault();mudar(x < 0 ? 1 : -1); }
+      if (Math.abs(x) > 45 && Math.abs(x) > Math.abs(y) * 1.3) { gesto.current = true;e.preventDefault();mudar(x < 0 ? 1 : -1); }
     }} onPointerCancel={() => { inicio.current = null; }}>
       {atual > 0 ? <Vizinha key={`anterior:${fotos[atual - 1]._id}:${fotos[atual - 1].url}:${fotos[atual - 1].updatedAt || ""}`} foto={fotos[atual - 1]} lado="anterior" selecionar={() => mudar(-1)} /> : null}
-      <FotoAtiva key={`${foto._id}:${url}:${foto.updatedAt || ""}`} url={url} titulo={titulo} />
+      <FotoAtiva key={`${foto._id}:${url}:${foto.updatedAt || ""}`} url={url} titulo={titulo} aoAbrir={() => { if (!gesto.current) setAmpliada(atual); }} />
       {atual < fotos.length - 1 ? <Vizinha key={`proxima:${fotos[atual + 1]._id}:${fotos[atual + 1].url}:${fotos[atual + 1].updatedAt || ""}`} foto={fotos[atual + 1]} lado="proxima" selecionar={() => mudar(1)} /> : null}
     </div>
+    {ampliada !== null ? <GaleriaPublicacao fotos={fotos} titulo={titulo} contexto="publico" inicial={ampliada} aoFechar={() => setAmpliada(null)} /> : null}
     <div className="carouselControls">
       <button type="button" aria-label="Foto anterior" disabled={atual === 0} onClick={() => mudar(-1)}>←</button>
       <span aria-live="polite">{atual + 1} de {fotos.length}</span>

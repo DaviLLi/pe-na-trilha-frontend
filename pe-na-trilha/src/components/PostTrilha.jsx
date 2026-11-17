@@ -1,3 +1,5 @@
+import DataPublicacao from "./DataPublicacao.jsx";
+import { useState } from "react";
 import { useAuth } from "../contexts/useAuth";
 import { obterPermissoesTrilha } from "../services/trilhaPermissoes.js";
 import { Link } from "react-router-dom";
@@ -36,6 +38,9 @@ function TrashIcon() {
 
 function PostTrilha({ trilha, onDelete, excluindo }) {
   const { usuario } = useAuth();
+  const [fotoFalhou, setFotoFalhou] = useState(null);
+  const autor = trilha.autor;
+  const nomeAutor = autor?.nomeCompleto || autor?.nomeUsuario || "Autor indisponível";
   const permissoes = obterPermissoesTrilha(trilha, usuario);
 
   return (
@@ -64,6 +69,10 @@ function PostTrilha({ trilha, onDelete, excluindo }) {
         </div> : null}
       </header>
 
+      <div className="postAuthor">
+        {autor?.fotoPerfil && fotoFalhou !== autor.fotoPerfil ? <img src={autor.fotoPerfil} alt={`Foto de ${nomeAutor}`} loading="lazy" onError={() => setFotoFalhou(autor.fotoPerfil)} /> : <span className="postAuthorAvatar" aria-hidden="true">{nomeAutor.charAt(0).toLocaleUpperCase("pt-BR")}</span>}
+        <div><strong>{nomeAutor}</strong>{autor?.nomeUsuario ? <span>@{autor.nomeUsuario}</span> : null}<DataPublicacao createdAt={trilha.createdAt} /></div>
+      </div>
       <div className='postContent'>
         <p className='postText'>{trilha.descricao}</p>
         <div className='postAddress'>
