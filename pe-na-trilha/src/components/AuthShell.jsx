@@ -2,13 +2,16 @@ import { Link } from "react-router-dom";
 import logo from "../assets/logo.png";
 
 function AuthShell({ eyebrow, title, description, mode, children }) {
+  const marca = mode === "login" ? <>
+    <img className="authBrandSymbol" src={logo} alt="" />
+    <span className="authBrandName">Pé na <strong>Trilha</strong></span>
+  </> : <><img src={logo} alt="" /><span>Pé na <strong>Trilha</strong></span></>;
   return (
     <main className={`authPage authPage-${mode}`}>
       <section className="authFrame" aria-label="Autenticação Pé na Trilha">
         <aside className="authStory">
           <Link className="authBrand" to="/trilhas" aria-label="Pé na Trilha, página de trilhas">
-            <img src={logo} alt="" />
-            <span>Pé na <strong>Trilha</strong></span>
+            {marca}
           </Link>
 
           <div className="authStoryCopy">
@@ -26,8 +29,7 @@ function AuthShell({ eyebrow, title, description, mode, children }) {
 
         <section className="authPanel">
           <div className="authPanelMobileBrand">
-            <img src={logo} alt="" />
-            <span>Pé na <strong>Trilha</strong></span>
+            {marca}
           </div>
           {children}
         </section>
