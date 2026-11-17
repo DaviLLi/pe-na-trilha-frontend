@@ -1,4 +1,4 @@
-import DataPublicacao from "./DataPublicacao.jsx";
+import AutorPublicacao from "./AutorPublicacao.jsx";
 import axios from "axios";
 import { useEffect, useRef, useState } from "react";
 import { Link } from "react-router-dom";
@@ -118,17 +118,17 @@ export default function PublicacoesPerfil({ aoAtualizar } = {}) {
   if (!publicacoes.length) return <div className="profilePostsEmpty" role="status">
     {mensagem ? <p>{mensagem}</p> : null}
     {falhaAcao ? <p role="alert">{falhaAcao}</p> : null}
-    <Link to="/trilhas/nova" aria-label="Adicionar publicação"><span aria-hidden="true">＋</span></Link><strong>Nenhuma publicação ainda</strong><p>Suas contribuições aparecerão aqui.</p>
+    <Link className="profileFirstPostLink" to="/trilhas/nova" aria-label="Adicionar publicação"><span aria-hidden="true">＋</span></Link><strong>Nenhuma publicação ainda</strong><p>Suas contribuições aparecerão aqui.</p>
   </div>;
   return <div className="profilePostList">
     <button className="profileRefreshButton" type="button" disabled={ocupada} onClick={() => setVersao((atual) => atual + 1)}>Atualizar publicações</button>
     {mensagem ? <p role="status">{mensagem}</p> : null}
     {falhaAcao ? <p role="alert">{falhaAcao}</p> : null}
     {publicacoes.map((publicacao) => <article className="profilePostCard" data-publicacao-id={publicacao._id} key={publicacao._id}>
+      <AutorPublicacao autor={publicacao.proprietario === usuario?._id ? usuario : publicacao.autor} createdAt={publicacao.createdAt} />
       <header className="profilePostHeader"><h3>{publicacao.titulo}</h3>
         <span className="profilePostStatus" data-status={publicacao.status}>{Object.hasOwn(ESTADOS, publicacao.status) ? ESTADOS[publicacao.status] : "Estado não informado"}</span>
       </header>
-      <DataPublicacao createdAt={publicacao.createdAt} />
       <p>{publicacao.descricao}</p><p className="profilePostAddress">{publicacao.endereco}</p>
       <DetalhesTrilha trilha={publicacao} />
       {typeof publicacao.motivoRejeicao === "string" && publicacao.motivoRejeicao.trim() ?

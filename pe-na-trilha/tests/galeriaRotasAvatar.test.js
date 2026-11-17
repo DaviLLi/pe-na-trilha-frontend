@@ -58,7 +58,7 @@ test("Aplicação real: galeria, avatar persistido e rotas por sessão/papel com
         }
         if (path === "/trilhas/minhas") { json(200, db.filter((p) => p.proprietario === usuario._id).map((p) => dto(p, "autor")));return; }
         if (path === "/trilhas/pendentes") { json(usuario.perfil === "admin" ? 200 : 403, usuario.perfil === "admin" ? db.filter((p) => p.status === "pending").map((p) => dto(p, "admin")) : { mensagem: "Acesso negado." });return; }
-        if (path === "/trilhas" && req.method === "GET") { json(200, db.filter((p) => p.status === "approved").map((p) => dto(p, "publico")));return; }
+        if (path === "/trilhas" && req.method === "GET") { json(200, db.filter((p) => p.status === "approved" && (!new URL(req.url,"http://teste").searchParams.get("busca") || [p.titulo,p.descricao,p.endereco,p.tipoLocal,p.dificuldade,p.condicaoCaminho,p.sinalizacao,p.estacionamento,p.banheiro,p.alimentacao,p.estruturaBanho,p.acesso,p.caracteristicaPrincipal].some(v => typeof v === "string" && v.toLocaleLowerCase("pt-BR").includes(new URL(req.url,"http://teste").searchParams.get("busca").toLocaleLowerCase("pt-BR"))))).map((p) => dto(p, "publico")));return; }
         if (path === "/trilhas" && req.method === "POST") { const data = JSON.parse(body), nova = { ...data, _id: id(proximoPost++), status: "pending", proprietario: usuario._id, fotos: [] };db.push(nova);json(201, dto(nova, "autor"));return; }
         const item = db.find((p) => p._id === path.split("/")[path.startsWith("/trilhas/minhas/") ? 3 : 2]);
         if (path.endsWith("/fotos") && req.method === "POST" && item) { const foto = { _id: id(9000 + item.fotos.length), updatedAt: "2026-11-13T13:00:00Z" };item.fotos.push(foto);json(201, dto(item, "autor").fotos.at(-1));return; }
@@ -126,6 +126,31 @@ test("Aplicação real: galeria, avatar persistido e rotas por sessão/papel com
         await captura(`banner-${medalha}`);
       }
     });
+    await t.test("quatro ajustes preservam medalhas, cabeçalho, primeira trilha e busca remota", async () => {
+      for(const largura of [390,1280]) {
+        await chrome.viewport(largura,1000);
+        await abrir('/medalhas');await esperar(()=>chrome.avaliar("document.querySelectorAll('.medalLevel').length===5"),'medalhas');
+        assert.doesNotMatch(await texto(),/A API ainda não fornece/);await captura(`quatro-medalhas-${largura}`);
+        db=[];await abrir('/perfil');await esperar(()=>chrome.avaliar("Boolean(document.querySelector('.profileFirstPostLink'))"),'primeira trilha');
+        assert.equal(await chrome.avaliar("document.querySelector('.profileFirstPostLink').getAttribute('href')"),'/trilhas/nova');
+        await chrome.avaliar("document.querySelector('.profileFirstPostLink').focus()");await captura(`quatro-vazio-${largura}`);
+        await chrome.avaliar("document.querySelector('.profileFirstPostLink').click()");await esperar(()=>chrome.avaliar("Boolean(document.querySelector('.trilhaForm'))"),'formulário');
+        db=[{...post(1),tipoLocal:'Cachoeira',autor:{...pessoa},createdAt:'2026-11-10T15:35:00Z'}, {...post(2,'pending'),tipoLocal:'Cachoeira'}, {...post(3,'rejected'),tipoLocal:'Cachoeira'}];
+        for(const pagina of ['/trilhas','/perfil']) {
+          await abrir(pagina);await esperar(()=>chrome.avaliar("Boolean(document.querySelector('.postAuthor time'))"),'autor');
+          const ordem=await chrome.avaliar("(()=>{const a=document.querySelector('.postAuthor'),t=document.querySelector('.postTitle,.profilePostHeader h3');return {antes:Boolean(a.compareDocumentPosition(t)&Node.DOCUMENT_POSITION_FOLLOWING),acima:a.getBoundingClientRect().bottom<=t.getBoundingClientRect().top,nome:a.textContent};})()");
+          assert.equal(ordem.antes,true);assert.equal(ordem.acima,true);assert.match(ordem.nome,/@pessoa/);
+          if(pagina==='/perfil') await chrome.avaliar("document.querySelector('.profilePostCard').scrollIntoView({block:'start'});window.scrollBy(0,-140)");
+          await captura(`quatro-${pagina.slice(1)}-${largura}`);
+        }
+        await abrir('/trilhas');await esperar(()=>chrome.avaliar("document.querySelectorAll('.post').length===1"),'feed');
+        const buscar=termo=>chrome.avaliar(`(()=>{const e=document.querySelector('.trailSearch input');Object.getOwnPropertyDescriptor(HTMLInputElement.prototype,'value').set.call(e,${JSON.stringify(termo)});e.dispatchEvent(new Event('input',{bubbles:true}));})()`);
+        await buscar('CaChO');await esperar(()=>requests.some(r=>r.url.includes('busca=CaChO')),'busca no endpoint');
+        await esperar(()=>chrome.avaliar("document.querySelectorAll('.post').length===1"),'resultado por característica');await captura(`quatro-busca-${largura}`);
+        await buscar('inexistente');await esperar(async()=>(await texto()).includes('Nenhum resultado para'),'sem resultado');
+        await buscar('');await esperar(()=>chrome.avaliar("document.querySelectorAll('.post').length===1"),'limpar busca');
+      }
+    });
     await t.test("visitante é redirecionado em URLs internas diretas; documentos e cadastro permanecem públicos", async () => {
       logado = false;
       for (const path of ["/trilhas", "/perfil", "/trilhas/nova", `/trilhas/${id(1)}/editar`, "/admin", "/ajuda", "/medalhas", "/"]) {
@@ -151,6 +176,7 @@ test("Aplicação real: galeria, avatar persistido e rotas por sessão/papel com
       await esperar(()=>chrome.avaliar("document.querySelector('.carouselControls span')?.textContent==='1 de 3'"),"teclado");
       const medidas=await chrome.avaliar("(()=>{const p=document.querySelector('.post').getBoundingClientRect(),f=document.querySelector('.feed').getBoundingClientRect();return {razao:p.width/f.width,centro:Math.abs(p.left+p.width/2-f.left-f.width/2)};})()");
       assert.ok(Math.abs(medidas.razao-.75)<.01);assert.ok(medidas.centro<1);await captura('feed-carrossel-desktop');
+      await esperar(()=>chrome.avaliar("Boolean(document.querySelector('.post .photoOpenControl'))"),"foto pronta para ampliar");
       await chrome.avaliar("document.querySelector('.post .photoOpenControl').click();true");await modal("1 de 3");await fotoPronta();
       await chrome.pressionarTecla('ArrowRight');await modal("2 de 3");await chrome.pressionarTecla('Escape');
       await esperar(()=>chrome.avaliar("!document.querySelector('dialog')"),"fechamento por Escape");
@@ -182,6 +208,20 @@ test("Aplicação real: galeria, avatar persistido e rotas por sessão/papel com
     await t.test("publicação recém-criada mostra fotos privadas; aprovação libera Feed sem mudar contrato", async () => {
       await abrir("/trilhas/nova");await esperar(() => chrome.avaliar("Boolean(document.getElementById('titulo'))"), "cadastro");await escrever("titulo", "Nova trilha com fotos");await escrever("descricao", "Descrição da nova trilha");await escrever("endereco", "Local novo");await selecionar("#fotos-publicacao", ["um.png", "dois.png"]);await chrome.avaliar("document.querySelector('.trilhaForm').requestSubmit()");await esperar(async () => (await texto()).includes("2 fotos com envio confirmado"), "uploads concluídos");await clicar("Ver minhas publicações");await esperar(() => chrome.avaliar("document.querySelectorAll('.profilePostPhoto img').length===2"), "fotos no Perfil");await captura("publicacao-criada");await chrome.viewport(390, 1000);await captura("publicacao-criada-mobile");await chrome.viewport(1280, 1000);assert.equal(db[0].status, "pending");
       await abrir("/trilhas");await esperar(async () => (await texto()).includes("Nenhuma trilha cadastrada"), "Feed sem pendente");usuario.perfil = "admin";await abrir("/admin");await esperar(() => chrome.avaliar("Boolean(document.querySelector('.adminPostCard'))"), "moderação");await clicar("Aprovar");await esperar(async () => (await texto()).includes("Publicação aprovada."), "aprovação");await abrir("/trilhas");await esperar(() => chrome.avaliar("Boolean(document.querySelector('.postPhoto img')?.naturalWidth)"), "Feed com fotos aprovadas");assert.match(await texto(), /Nova trilha com fotos/);assert.equal(db[0].status, "approved");
+    });
+    await t.test("avatares das publicações têm tamanho ampliado e preservam contorno e exceções", async () => {
+      usuario.fotoPerfil=origem+'/__avatar.png';db=[{...post(1),autor:{...usuario}}];
+      for(const largura of [1280,390]) {
+        await chrome.viewport(largura,1000);
+        for(const pagina of ['/trilhas','/perfil']) {
+          await abrir(pagina);await esperar(()=>chrome.avaliar("Boolean(document.querySelector('.postAuthor img')?.naturalWidth)"),'avatar');
+          const avatar=await chrome.avaliar("(()=>{const e=document.querySelector('.postAuthor img'),s=getComputedStyle(e),r=e.getBoundingClientRect();return {cor:s.outlineColor,espessura:s.outlineWidth,estilo:s.outlineStyle,offset:s.outlineOffset,raio:s.borderRadius,w:r.width,h:r.height};})()");
+          assert.deepEqual(avatar,{cor:'rgb(104, 188, 152)',espessura:'2px',estilo:'solid',offset:'-2px',raio:'50%',w:45,h:45});
+          assert.equal(await chrome.avaliar("[...document.querySelectorAll('.sidebarAccount img,.profileAvatar img,.postPhoto img')].every(e=>getComputedStyle(e).outlineStyle==='none' && !e.classList.contains('userAvatarOutline'))"),true);
+        }
+        await clicar('Editar perfil');await selecionar('#editar-foto-perfil input[type=file]',['avatar.png']);await esperar(()=>chrome.avaliar("Boolean(document.querySelector('.avatarCropCanvas'))"),'recorte');
+        assert.deepEqual(await chrome.avaliar("(()=>{const s=getComputedStyle(document.querySelector('.avatarCropFrame'));return [s.borderTopColor,s.borderTopWidth];})()"),['rgb(104, 188, 152)','2px']);
+      }
     });
     await t.test("avatar tem prévia, upload único, atualiza Perfil/Sidebar e persiste em novo login", async () => {
       await chrome.viewport(1280, 1000);await abrir("/perfil");await clicar("Editar perfil");await selecionar('#editar-foto-perfil input[type=file]', ["avatar.png"]);await esperar(() => chrome.avaliar("Boolean(document.querySelector('#editar-foto-perfil .avatarCropCanvas')?.width)"), "prévia");

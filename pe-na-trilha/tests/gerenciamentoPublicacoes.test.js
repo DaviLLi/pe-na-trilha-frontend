@@ -92,11 +92,24 @@ test("Gerenciamento próprio real no navegador com API exclusivamente sintética
         await esperar(() => chrome.avaliar("Boolean(document.querySelector('.trilhaForm'))"), "formulário novo");
       }
     });
-    await t.test("exclusão por Perfil e Feed com e sem fotos persiste ao remontar ambas as listas", async () => {
-      for (const pagina of ["/perfil", "/trilhas"]) for (const comFotos of [false, true]) {
+    await t.test("Feed sem controles de gestão para proprietário, terceiro e admin em desktop e celular", async () => {
+      db = [post(1, "approved"), { ...post(2, "approved"), proprietario: id(88) }];
+      for (const largura of [1280, 390]) for (const user of [usuario, { ...usuario, perfil: "admin" }]) {
+        await chrome.viewport(largura);await abrir("/trilhas", user);
+        await esperar(() => chrome.avaliar("document.querySelectorAll('.post').length===2"), "Feed");
+        assert.equal(await chrome.avaliar("document.querySelectorAll('.post .editBtn,.post .deleteBtn,.post .actionButtons,.post a[href$=\"/editar\"]').length"), 0);
+        assert.equal(mutacoes().length, 0);
+        await abrir("/perfil", user);await esperar(() => chrome.avaliar("document.querySelectorAll('.profilePostCard').length===2"), "Perfil");
+        assert.equal(await chrome.avaliar("document.querySelectorAll('.ownerEditButton').length"), 1);
+        assert.equal(await chrome.avaliar("document.querySelectorAll('.ownerDeleteButton').length"), 1);
+        await clicar("Editar publicação");await esperar(() => chrome.avaliar("Boolean(document.querySelector('.trilhaForm'))"), "edição pelo Perfil");
+      }
+    });
+    await t.test("exclusão pelo Perfil com e sem fotos persiste ao remontar Perfil e Feed", async () => {
+      for (const comFotos of [false, true]) {
         db = [post(1, "approved", comFotos ? [foto(1, 10), foto(1, 11)] : []), { ...post(2, "approved"), proprietario: id(88) }];
-        await abrir(pagina);
-        const seletor = pagina === "/perfil" ? ".ownerDeleteButton" : ".deleteBtn";
+        await abrir("/perfil");
+        const seletor = ".ownerDeleteButton";
         await esperar(() => chrome.avaliar(`Boolean(document.querySelector('${seletor}'))`), "excluir disponível");
         assert.equal(await chrome.avaliar(`document.querySelectorAll('${seletor}').length`), 1);
         await chrome.avaliar(`document.querySelector('${seletor}').click()`);
