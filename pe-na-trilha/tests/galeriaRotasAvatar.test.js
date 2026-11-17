@@ -97,18 +97,25 @@ test("Aplicação real: galeria, avatar persistido e rotas por sessão/papel com
       await abrir("/admin");await esperar(() => chrome.avaliar("location.pathname==='/trilhas'"), "admin bloqueado");assert.equal(requests.some((r) => r.url === "/trilhas/pendentes"), false);assert.equal(await chrome.avaliar("document.querySelector('[aria-label=Administração]')===null"), true);for (const largura of [1280, 390]) { await chrome.viewport(largura, 1000);await captura(`usuario-comum-${largura}`); }
       usuario.perfil = "admin";await abrir("/admin");await esperar(async () => (await texto()).includes("Nenhuma publicação pendente"), "admin autorizado");assert.equal(await chrome.avaliar("Boolean(document.querySelector('[aria-label=Administração]'))"), true);for (const largura of [1280, 390]) { await chrome.viewport(largura, 1000);await captura(`administrador-${largura}`); }
     });
-    await t.test("Feed amplia detalhe, navega com botões/setas e ESC devolve foco", async () => {
-      db = [post(1)];await chrome.viewport(1280, 1000);await abrir("/trilhas");await esperar(() => chrome.avaliar("Boolean(document.querySelector('.postPhoto img')?.naturalWidth)"), "Feed");
-      await chrome.avaliar("document.querySelector('.postPhoto .photoOpenControl').focus();document.querySelector('.postPhoto .photoOpenControl').click();true");await modal("1 de 2");await fotoPronta();
-      assert.equal(await chrome.avaliar("document.querySelector('dialog img').naturalWidth"), 1280);assert.match(await chrome.avaliar("document.querySelector('dialog img').src"), /\/trilhas\/.+variante=detalhe$/);await clicar("Próxima →", "dialog");await modal("2 de 2");await fotoPronta();
-      const proporcao = await chrome.avaliar("(()=>{const i=document.querySelector('dialog img'),r=i.getBoundingClientRect();return Math.abs(r.width/r.height-i.naturalWidth/i.naturalHeight);})()");assert.ok(proporcao < .01);await captura("galeria-feed-desktop");
-      await chrome.pressionarTecla("ArrowLeft");await modal("1 de 2");await fechar();assert.equal(await chrome.avaliar("document.activeElement===document.querySelector('.postPhoto .photoOpenControl')"), true);
-      await captura("feed-desktop");
+    await t.test("Feed navega dentro do cartão com detalhe ativo, sem modal ou botão Ampliar", async () => {
+      db = [post(1, "approved", 3)];await chrome.viewport(1280, 1000);await abrir("/trilhas");await esperar(() => chrome.avaliar("Boolean(document.querySelector('.postPhoto img')?.naturalWidth)"), "Feed");
+      assert.equal(await chrome.avaliar("document.querySelector('dialog,.post .photoOpenControl')===null"),true);
+      assert.match(await chrome.avaliar("document.querySelector('.postPhoto img').src"),/variante=detalhe$/);
+      assert.equal(requests.filter(r=>r.url.endsWith('variante=detalhe')).length,1);
+      await chrome.avaliar("document.querySelector('.carouselControls [aria-label=\"Próxima foto\"]').click();true");
+      await esperar(()=>chrome.avaliar("document.querySelector('.carouselControls span')?.textContent==='2 de 3'"),"segunda foto");
+      await chrome.avaliar("document.querySelector('.feedCarousel').focus();true");await chrome.pressionarTecla('ArrowLeft');
+      await esperar(()=>chrome.avaliar("document.querySelector('.carouselControls span')?.textContent==='1 de 3'"),"teclado");
+      const medidas=await chrome.avaliar("(()=>{const p=document.querySelector('.post').getBoundingClientRect(),f=document.querySelector('.feed').getBoundingClientRect();return {razao:p.width/f.width,centro:Math.abs(p.left+p.width/2-f.left-f.width/2)};})()");
+      assert.ok(Math.abs(medidas.razao-.75)<.01);assert.ok(medidas.centro<1);await captura('feed-carrossel-desktop');
     });
-    await t.test("gesto real de deslizar navega no celular; legenda e layout cabem em celular e tablet", async () => {
-      db = [post(1)];await chrome.viewport(390, 844);await abrir("/trilhas");await esperar(() => chrome.avaliar("Boolean(document.querySelector('.photoOpenControl'))"), "Feed");await chrome.avaliar("document.querySelector('.photoOpenControl').click();true");await modal("1 de 2");await fotoPronta();
-      const ponto = await chrome.avaliar("(()=>{const r=document.querySelector('.galleryStage').getBoundingClientRect();return {x:r.right-25,y:r.top+r.height/2,fim:r.left+25};})()");await chrome.deslizar(ponto.x, ponto.y, ponto.fim);await modal("2 de 2");await fotoPronta();await captura("galeria-feed-mobile");await fechar();
-      for (const largura of [390, 768, 1280]) { await chrome.viewport(largura, 1000);assert.equal(await chrome.avaliar("document.documentElement.scrollWidth>innerWidth"), false); }
+    await t.test("carrossel aceita deslize real e preserva rolagem vertical no celular", async () => {
+      db=[post(1,'approved',3)];await chrome.viewport(390,844);await abrir('/trilhas');await esperar(()=>chrome.avaliar("Boolean(document.querySelector('.postPhoto img')?.naturalWidth)"),'Feed');
+      const ponto=await chrome.avaliar("(async()=>{const e=document.querySelector('.carouselStage');e.scrollIntoView({block:'center'});await new Promise(r=>requestAnimationFrame(()=>requestAnimationFrame(r)));const b=e.getBoundingClientRect();return {x:b.left+b.width*.7,y:b.top+b.height/2,fim:b.left+b.width*.3};})()");
+      await chrome.deslizar(ponto.x,ponto.y,ponto.fim);await esperar(()=>chrome.avaliar("document.querySelector('.carouselControls span')?.textContent==='2 de 3'"),'deslize');
+      assert.equal(await chrome.avaliar("getComputedStyle(document.querySelector('.carouselStage')).touchAction"),'pan-y pinch-zoom');
+      assert.equal(await chrome.avaliar("document.querySelector('dialog')===null"),true);await esperar(()=>chrome.avaliar("Boolean(document.querySelector('.postPhoto img')?.naturalWidth)"),'imagem após deslize');await captura('feed-carrossel-mobile');
+      for(const largura of [390,768,1280]){await chrome.viewport(largura,1000);assert.equal(await chrome.avaliar("document.documentElement.scrollWidth>innerWidth"),false);}
     });
     await t.test("Perfil usa detalhe privado por Blob, posição, erro legado e revogação ao navegar", async () => {
       db = [post(2, "pending", 3)];db[0].fotos[2].legada = true;await abrir("/perfil");await esperar(() => chrome.avaliar("document.querySelectorAll('.profilePostPhoto').length===3"), "Perfil");
@@ -154,11 +161,11 @@ test("Aplicação real: galeria, avatar persistido e rotas por sessão/papel com
       assert.equal(recorte.width,90);assert.equal(recorte.height,90);assert.equal(recorte.tipo,"image/png");assert.equal(recorte.nome,"avatar-recortado.png");assert.equal(recorte.canto,0);assert.equal(recorte.centro,255);
       pendentes.shift()();await esperar(async()=>(await texto()).includes("Foto de perfil atualizada."),"confirmação");
     });
-    await t.test("prévia do Feed tem ampliação moderada, detalhe só é solicitado quando a galeria abre e botões administrativos são arredondados",async()=>{
-      db=[post(1)];await chrome.viewport(1280,1000);await abrir("/trilhas");await esperar(()=>chrome.avaliar("Boolean(document.querySelector('.postPhoto img')?.naturalWidth)"),"miniatura");
-      assert.equal(requests.some(r=>r.url.includes('variante=detalhe')),false);
-      assert.equal(await chrome.avaliar("(()=>{const e=document.querySelector('.postPhoto img'),b=e.getBoundingClientRect();return b.width<=e.naturalWidth*1.4+.1&&b.height<=e.naturalHeight*1.4+.1&&document.querySelector('.postPhoto').getBoundingClientRect().width<=640;})()"),true);
-      await chrome.avaliar("document.querySelector('.photoOpenControl').click();true");await fotoPronta();assert.equal(await chrome.avaliar("document.querySelector('dialog img').naturalWidth"),1280);await fechar();
+    await t.test("carrossel usa detalhe somente na foto ativa e preserva botões administrativos",async()=>{
+      db=[post(1)];await chrome.viewport(1280,1000);await abrir('/trilhas');await esperar(()=>chrome.avaliar("Boolean(document.querySelector('.postPhoto img')?.naturalWidth)"),'foto ativa');
+      assert.equal(requests.filter(r=>r.url.endsWith('variante=detalhe')).length,1);
+      assert.equal(await chrome.avaliar("document.querySelector('.postPhoto img').naturalWidth"),1280);
+      assert.equal(await chrome.avaliar("document.querySelector('dialog')===null"),true);
       await abrir('/perfil');await esperar(()=>chrome.avaliar("[...document.querySelectorAll('.profilePostPhoto img')].length===2 && [...document.querySelectorAll('.profilePostPhoto img')].every(e=>e.naturalWidth>0)"),"prévia privada");
       assert.equal(await chrome.avaliar("[...document.querySelectorAll('.profilePostPhoto img')].every(e=>{const b=e.getBoundingClientRect();return b.width<=e.naturalWidth&&b.height<=e.naturalHeight;})"),true);
       usuario.perfil='admin';db=[post(2,'pending')];await abrir('/admin');await esperar(()=>chrome.avaliar("Boolean(document.querySelector('.adminDecisionButtons'))"),"admin");

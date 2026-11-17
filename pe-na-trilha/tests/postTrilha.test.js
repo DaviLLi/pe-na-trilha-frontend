@@ -95,26 +95,26 @@ test("PostTrilha: integração visual das fotos públicas em navegador", {
     };
     const estado = () => chrome.avaliar(`(() => {
       const figura = document.querySelector('.postPhoto'); const img = figura?.querySelector('img');
-      return { src: img?.src || null, busy: figura?.getAttribute('aria-busy'), texto: figura?.textContent,
+      return { src: img?.src || null, busy: figura?.getAttribute('aria-busy'), texto: (document.querySelector(".feedCarousel") || figura)?.textContent,
         classe: figura?.className, loading: img?.loading, largura: figura?.getBoundingClientRect().width,
         altura: figura?.getBoundingClientRect().height, descricao: document.querySelector('.postText')?.textContent };
     })()`);
 
-    await t.test("usa origem da API e miniatura; mantém espaço, legenda de carregamento e contador", async () => {
+    await t.test("usa origem da API e detalhe ativo; mantém espaço, legenda de carregamento e contador", async () => {
       modos.set(caminho(), "aguardar");
       await render(publicacao([{ _id: fotoId, url: caminho() }, { _id: outraFotoId, url: caminho(outraFotoId) }]));
       await esperar(() => respostasPendentes.length > 0, "request da miniatura");
       const inicial = await estado();
-      assert.equal(inicial.src, origem + caminho() + "?variante=miniatura");
+      assert.equal(inicial.src, origem + caminho() + "?variante=detalhe");
       assert.equal(inicial.busy, "true"); assert.match(inicial.texto, /Carregando foto/);
-      assert.match(inicial.texto, /2 fotos/); assert.equal(inicial.loading, "lazy");
+      assert.match(inicial.texto, /1 de 2/); assert.equal(inicial.loading, "lazy");
       assert.ok(inicial.largura > 0 && inicial.altura > 0);
       respostasPendentes.shift()();
       await esperar(async () => (await estado()).busy === "false", "load da imagem");
       const carregada = await estado();
       assert.ok(carregada.src); assert.doesNotMatch(carregada.texto, /Carregando/);
       assert.equal(carregada.altura, inicial.altura); assert.equal(carregada.largura, inicial.largura);
-      assert.equal(requisicoes.length, 1); // Não baixa outras fotos do cartão.
+      assert.equal(requisicoes.filter(url => url.endsWith("variante=detalhe")).length, 1); // Detalhe somente da foto ativa.
     });
     await t.test("nenhuma foto e legado null não criam img nem novas requisições", async () => {
       const antes = requisicoes.length;
@@ -148,7 +148,7 @@ test("PostTrilha: integração visual das fotos públicas em navegador", {
         assert.equal(atual.src, null); assert.equal(atual.busy, "false");
         assert.equal(atual.classe, "postPhoto");
         assert.equal(atual.altura, inicial.altura); assert.equal(atual.largura, inicial.largura);
-        assert.ok(Math.abs(atual.largura / atual.altura - (largura <= 640 ? 4 / 3 : 2)) < 0.02);
+        assert.ok(atual.altura > 0 && atual.altura <= 320);
         assert.equal(atual.descricao, "Descrição preservada no Feed.");
         // Compara também sucesso com erro no mesmo viewport e largura de cartão.
         const fotoSucesso = largura === 1280 ? "000000000000000000000008" : "000000000000000000000009";
@@ -171,12 +171,12 @@ test("PostTrilha: integração visual das fotos públicas em navegador", {
       assert.doesNotMatch(inicial.texto, /Não foi possível/);
       respostasPendentes.shift()();
       await esperar(async () => (await estado()).busy === "false", "nova imagem");
-      assert.equal((await estado()).src, origem + caminho(outraFotoId) + "?variante=miniatura");
+      assert.equal((await estado()).src, origem + caminho(outraFotoId) + "?variante=detalhe");
     });
     await t.test("renderizações com mesma URL reutilizam img sem novas requisições", async () => {
       const foto = "000000000000000000000005";
       const fotos = [{ _id: foto, url: caminho(foto) }, { _id: outraFotoId, url: caminho(outraFotoId) }];
-      const antes = requisicoes.length; modos.set(caminho(foto), "aguardar");
+      const antes = requisicoes.length; modos.delete(caminho(outraFotoId)); modos.set(caminho(foto), "aguardar");
       await render({ ...publicacao(fotos), titulo: "Mesma URL inicial" });
       await esperar(() => respostasPendentes.length > 0, "request único");
       await chrome.avaliar("window.imagemOriginal = document.querySelector('.postPhoto img'); true");
@@ -188,8 +188,8 @@ test("PostTrilha: integração visual das fotos públicas em navegador", {
         for (let i = 0; i < 4; i++) {
           await render({ ...publicacao(fotos.map((item) => ({ ...item }))), titulo: `Mesma URL ${fase} ${i}` });
           assert.equal(await chrome.avaliar("document.querySelector('.postPhoto img') === window.imagemOriginal"), true);
-          assert.match((await estado()).texto, /2 fotos/);
-          assert.equal(requisicoes.length, antes + 1);
+          assert.match((await estado()).texto, /1 de 2/);
+          assert.equal(requisicoes.length, antes + 2);
         }
       }
       await chrome.avaliar("delete window.imagemOriginal");
