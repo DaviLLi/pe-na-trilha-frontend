@@ -1,5 +1,7 @@
+import { useEffect } from "react";
 import { Navigate, Route, Routes, useLocation } from "react-router-dom";
 import { destinoAposLogin } from "./services/navegacaoSegura.js";
+import { encerrarSessaoCenarioFeed, obterCenarioFeed } from "./services/cenariosFeed.js";
 import Sidebar from "./components/Sidebar";
 import Home from "./pages/Home";
 import ListaTrilhas from "./pages/ListaTrilhas";
@@ -79,8 +81,15 @@ function RotaProtegida({ children, admin = false }) {
 
 function App() {
   const { pathname } = useLocation();
-  const { autenticado, carregandoSessao } = useAuth();
+  const { usuario, autenticado, carregandoSessao, erroRestauracao } = useAuth();
+  const usuarioId = usuario?._id;
   const esconderMenu = !autenticado || carregandoSessao || ["/login", "/cadastro", "/termos", "/privacidade"].includes(pathname);
+
+  useEffect(() => {
+    if (carregandoSessao || erroRestauracao) return;
+    if (usuarioId) obterCenarioFeed(usuarioId);
+    else encerrarSessaoCenarioFeed();
+  }, [usuarioId, carregandoSessao, erroRestauracao]);
 
   return (
     <div className={esconderMenu ? "appFrame authFrameOnly" : "appFrame"}>

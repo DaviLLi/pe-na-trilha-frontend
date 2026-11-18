@@ -2,14 +2,26 @@ import axios from "axios";
 import { useEffect, useLayoutEffect, useRef, useState } from "react";
 import { Link } from "react-router-dom";
 import PostTrilha from "../components/PostTrilha";
+import { useAuth } from "../contexts/useAuth";
 import { obterMensagemErro } from "../services/api";
+import { obterCenarioFeed } from "../services/cenariosFeed.js";
 import {
   listarTrilhas,
 } from "../services/trilhasService";
+import "../styles/feedScenery.css";
 
 function ListaTrilhas() {
+  const { usuario } = useAuth();
+  const usuarioId = usuario?._id;
   const introducao = useRef(null);
   const pagina = useRef(null);
+  const imagemCenario = useRef(null);
+
+  useEffect(() => {
+    const url = obterCenarioFeed(usuarioId);
+    if (url) imagemCenario.current.src = url;
+  }, [usuarioId]);
+
   useLayoutEffect(() => {
     const intro = introducao.current;
     const atualizar = () => {
@@ -61,6 +73,9 @@ function ListaTrilhas() {
 
   return (
     <main className='layout feedPage' ref={pagina}>
+      <div className="feedScenery" aria-hidden="true">
+        <img ref={imagemCenario} alt="" decoding="async" fetchPriority="low" />
+      </div>
       <section className='feed' aria-live='polite'>
         <div className='feedIntro' ref={introducao}>
           <div>

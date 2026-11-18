@@ -83,6 +83,127 @@ test("Aplicação real: galeria, avatar persistido e rotas por sessão/papel com
     async function captura(nome) { if (process.env.PNT_VISUAL_CAPTURE_DIR) await writeFile(join(process.env.PNT_VISUAL_CAPTURE_DIR, nome + ".png"), Buffer.from((await chrome.capturar()).data, "base64")); }
     t.afterEach(async () => { await fechar();await chrome.avaliar("ocultar()");await esperar(() => chrome.avaliar("document.querySelector('main')===null"), "desmontagem");pendentes.splice(0).forEach((fn) => fn());requests.length = 0;modo = {};logado = true;usuario = { ...pessoa };db = []; });
 
+    await t.test("cenário do Feed persiste na sessão, muda na próxima e carrega os dez PNGs", async () => {
+      usuario.perfil = "admin";
+      db = [post(1), post(2), post(3)];
+      const seletor = ".feedScenery img";
+      const semCenario = () => chrome.avaliar("document.querySelector('.feedScenery') === null");
+      const carregarCenario = async () => {
+        await esperar(() => chrome.avaliar(`document.querySelector('${seletor}')?.naturalWidth > 0`), "PNG decodificado no Feed");
+        return chrome.avaliar(`document.querySelector('${seletor}').currentSrc`);
+      };
+      const irPeloMenu = async (caminho) => {
+        const link = `.productNav a[href="${caminho}"]`;
+        await chrome.avaliar(`document.querySelector('${link}').click()`);
+        await esperar(() => chrome.avaliar(`document.querySelector('${link}').getAttribute('aria-current') === 'page'`), caminho);
+      };
+
+      await chrome.viewport(1280, 1000);
+      await abrir("/perfil");
+      assert.equal(await semCenario(), true);
+      assert.equal(await chrome.avaliar("performance.getEntriesByType('resource').some(r => r.initiatorType === 'img' && r.name.includes('/cenarios-feed/'))"), false);
+      await irPeloMenu("/trilhas");
+      const primeiro = await carregarCenario();
+      const recursosCenario = () => chrome.avaliar("performance.getEntriesByType('resource').filter(r => r.initiatorType === 'img' && r.name.includes('/cenarios-feed/')).map(r => r.name)");
+      await esperar(async () => (await recursosCenario()).includes(primeiro), "registro do cenário carregado");
+      assert.deepEqual(await recursosCenario(), [primeiro]);
+      await esperar(() => chrome.avaliar("Boolean(document.querySelector('.post'))"), "publicação");
+
+      for (const largura of [1280, 390, 320]) {
+        await chrome.viewport(largura, 900);
+        const medirCobertura = (posicao) => chrome.avaliar(`(async () => {
+          const raiz = document.documentElement;
+          window.scrollTo(0, (raiz.scrollHeight - raiz.clientHeight) * ${posicao});
+          await new Promise(resolve => requestAnimationFrame(() => requestAnimationFrame(resolve)));
+          const camada = document.querySelector('.feedScenery');
+          const imagem = camada.firstElementChild;
+          const pagina = document.querySelector('.feedPage').getBoundingClientRect();
+          const barra = document.querySelector('.productSidebar').getBoundingClientRect();
+          const cenario = camada.getBoundingClientRect();
+          const foto = imagem.getBoundingClientRect();
+          const { maskImage, objectFit, objectPosition } = getComputedStyle(imagem);
+          const coincide = (a, b) => Math.abs(a - b) < 1;
+          const estilos = () => ['.productSidebar', '.trailSearch', '.post', '.carouselStage', '.profileRefreshButton', '.guideCard'].map(seletor => {
+            const el = document.querySelector(seletor);
+            const { background, color, border, padding } = getComputedStyle(el);
+            return [background, color, border, padding, el.getBoundingClientRect().toJSON()];
+          });
+          const antes = estilos();
+          camada.hidden = true;
+          const depois = estilos();
+          camada.hidden = false;
+          return {
+            igual: JSON.stringify(antes) === JSON.stringify(depois),
+            cobrePagina: ['top', 'right', 'bottom', 'left'].every(lado => coincide(cenario[lado], pagina[lado])),
+            cobreLargura: coincide(foto.left, innerWidth <= 640 ? 0 : barra.right) && coincide(foto.right, raiz.clientWidth),
+            cobreAltura: coincide(foto.top, innerWidth <= 640 ? barra.bottom : 0) && coincide(foto.bottom, raiz.clientHeight),
+            semRolagemHorizontal: raiz.scrollWidth === raiz.clientWidth,
+            rolou: scrollY > 0,
+            maskImage, objectFit, objectPosition,
+          };
+        })()`);
+        for (const [posicao, nome] of [[0, "topo"], [.5, "meio"], [1, "fim"]]) {
+          assert.deepEqual(await medirCobertura(posicao), {
+            igual: true, cobrePagina: true, cobreLargura: true, cobreAltura: true,
+            semRolagemHorizontal: true, rolou: posicao > 0,
+            maskImage: "none", objectFit: "cover", objectPosition: "50% 50%",
+          }, `${largura} px, ${nome}`);
+          if (posicao !== .5) await captura(`cenario-feed-${largura}${posicao ? "-fim" : ""}`);
+        }
+      }
+
+      await chrome.viewport(1280, 1000);
+      await clicar("Atualizar Feed");
+      assert.equal(await carregarCenario(), primeiro);
+      for (const caminho of ["/perfil", "/medalhas", "/trilhas/nova", "/admin", "/ajuda"]) {
+        await irPeloMenu(caminho);
+        assert.equal(await semCenario(), true, caminho);
+      }
+      await irPeloMenu("/trilhas");
+      assert.equal(await carregarCenario(), primeiro);
+      await chrome.navegar(origem + "/trilhas");
+      assert.equal(await carregarCenario(), primeiro);
+
+      await clicar("Sair", ".productNav");
+      await esperar(() => chrome.avaliar("Boolean(document.getElementById('identificador'))"), "logout");
+      assert.equal(await semCenario(), true);
+      await chrome.navegar(origem + "/cadastro");
+      await esperar(() => chrome.avaliar("Boolean(document.querySelector('.authForm'))"), "cadastro de usuário");
+      assert.equal(await semCenario(), true);
+      await chrome.navegar(origem + "/login");
+      await esperar(() => chrome.avaliar("Boolean(document.getElementById('identificador'))"), "login");
+      await login();
+      const segundo = await carregarCenario();
+      assert.notEqual(segundo, primeiro);
+
+      await chrome.avaliar("sessionStorage.clear()");
+      await chrome.navegar(origem + "/trilhas");
+      assert.notEqual(await carregarCenario(), segundo, "entrada em uma nova sessão de navegador com cookie válido");
+
+      const catalogo = await chrome.avaliar(`(async () => {
+        const { cenariosFeed, obterCenarioFeed, encerrarSessaoCenarioFeed } = await import('/src/services/cenariosFeed.js');
+        const urls = Object.values(cenariosFeed);
+        const sorteados = [];
+        const aleatorio = Math.random;
+        try {
+          for (let i = 0; i < urls.length; i++) {
+            Math.random = () => (i + .5) / urls.length;
+            sorteados.push(obterCenarioFeed('cenario-teste-' + i));
+            encerrarSessaoCenarioFeed();
+          }
+        } finally {
+          Math.random = aleatorio;
+        }
+        for (const url of urls) {
+          const imagem = new Image();
+          imagem.src = url;
+          await imagem.decode();
+        }
+        return { quantidade: urls.length, distintos: new Set(sorteados).size };
+      })()`);
+      assert.deepEqual(catalogo, { quantidade: 10, distintos: 10 });
+    });
+
     await t.test("matriz responsiva das telas principais", async () => {
       const resultados = [];
       usuario.perfil = "admin";
