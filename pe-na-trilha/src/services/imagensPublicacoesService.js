@@ -1,4 +1,4 @@
-import { AxiosError, CanceledError, isCancel } from "axios";
+import axios, { AxiosError, CanceledError, isCancel } from "axios";
 import api from "./api.js";
 
 const ID = "[a-f0-9]{24}";
@@ -71,18 +71,19 @@ async function preservarMensagemBlob(erro, signal) {
   erro.message = json.mensagem;
 }
 
-/**
- * Busca URL do autor OU do administrador pelo Axios compartilhado.
- * Retorna Blob (ou null para URL ausente), sem criar object URLs ou persistir bytes.
- * O consumidor futuro será responsável por URL.createObjectURL/revokeObjectURL.
- */
-export async function buscarImagemPrivada(url, { variante = "detalhe", signal } = {}) {
-  cancelarSeNecessario(signal);
-  const endereco = resolverUrl(url, "privado", variante);
+export function prepararImagemPublicacao(url, contexto, variante) {
+  const endereco = resolverUrl(url, contexto, variante);
   if (endereco === null) return null;
+  return { endereco, buscar: (signal) => baixarImagem(endereco, contexto, signal) };
+}
+
+async function baixarImagem(endereco, contexto, signal) {
+  cancelarSeNecessario(signal);
+  const privada = contexto === "privado";
+  const cliente = privada ? api : axios;
   try {
-    const resposta = await aguardarComCancelamento(() => api.get(endereco, {
-      responseType: "blob", withCredentials: true, signal,
+    const resposta = await aguardarComCancelamento(() => cliente.get(endereco, {
+      responseType: "blob", withCredentials: privada, signal,
       headers: { Accept: "image/webp" },
     }), signal);
     cancelarSeNecessario(signal);
@@ -100,4 +101,10 @@ export async function buscarImagemPrivada(url, { variante = "detalhe", signal } 
     cancelarSeNecessario(signal);
     throw erro;
   }
+}
+
+export async function buscarImagemPrivada(url, { variante = "detalhe", signal } = {}) {
+  cancelarSeNecessario(signal);
+  const pedido = prepararImagemPublicacao(url, "privado", variante);
+  return pedido ? pedido.buscar(signal) : null;
 }

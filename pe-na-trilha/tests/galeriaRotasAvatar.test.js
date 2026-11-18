@@ -83,13 +83,16 @@ test("Aplicação real: galeria, avatar persistido e rotas por sessão/papel com
     async function captura(nome) { if (process.env.PNT_VISUAL_CAPTURE_DIR) await writeFile(join(process.env.PNT_VISUAL_CAPTURE_DIR, nome + ".png"), Buffer.from((await chrome.capturar()).data, "base64")); }
     t.afterEach(async () => { await fechar();await chrome.avaliar("ocultar()");await esperar(() => chrome.avaliar("document.querySelector('main')===null"), "desmontagem");pendentes.splice(0).forEach((fn) => fn());requests.length = 0;modo = {};logado = true;usuario = { ...pessoa };db = []; });
 
-    await t.test("cenário do Feed persiste na sessão, muda na próxima e carrega os dez PNGs", async () => {
+    await t.test("cenário do Feed preserva a sessão e os nomes PNG salvos e carrega os dez WebPs", async () => {
       usuario.perfil = "admin";
       db = [post(1), post(2), post(3)];
       const seletor = ".feedScenery img";
+      const chaveSessao = "pe-na-trilha:cenario-feed:sessao:v1";
+      const chaveAnterior = "pe-na-trilha:cenario-feed:anterior:v1";
+      const cenarioLegado = "Refúgio Rochoso com Mar Turquesa.png";
       const semCenario = () => chrome.avaliar("document.querySelector('.feedScenery') === null");
       const carregarCenario = async () => {
-        await esperar(() => chrome.avaliar(`document.querySelector('${seletor}')?.naturalWidth > 0`), "PNG decodificado no Feed");
+        await esperar(() => chrome.avaliar(`document.querySelector('${seletor}')?.naturalWidth > 0`), "WebP decodificado no Feed");
         return chrome.avaliar(`document.querySelector('${seletor}').currentSrc`);
       };
       const irPeloMenu = async (caminho) => {
@@ -98,12 +101,19 @@ test("Aplicação real: galeria, avatar persistido e rotas por sessão/papel com
         await esperar(() => chrome.avaliar(`document.querySelector('${link}').getAttribute('aria-current') === 'page'`), caminho);
       };
 
+      await chrome.avaliar(`(() => {
+        const usuarioId = ${JSON.stringify(usuario._id)};
+        const cenario = ${JSON.stringify(cenarioLegado)};
+        sessionStorage.setItem(${JSON.stringify(chaveSessao)}, JSON.stringify({ usuarioId, cenario }));
+        localStorage.setItem(${JSON.stringify(chaveAnterior)} + ':' + usuarioId, JSON.stringify(cenario));
+      })()`);
       await chrome.viewport(1280, 1000);
       await abrir("/perfil");
       assert.equal(await semCenario(), true);
       assert.equal(await chrome.avaliar("performance.getEntriesByType('resource').some(r => r.initiatorType === 'img' && r.name.includes('/cenarios-feed/'))"), false);
       await irPeloMenu("/trilhas");
       const primeiro = await carregarCenario();
+      assert.equal(decodeURIComponent(new URL(primeiro).pathname.split("/").pop()), cenarioLegado.replace(/\.png$/, ".webp"));
       const recursosCenario = () => chrome.avaliar("performance.getEntriesByType('resource').filter(r => r.initiatorType === 'img' && r.name.includes('/cenarios-feed/')).map(r => r.name)");
       await esperar(async () => (await recursosCenario()).includes(primeiro), "registro do cenário carregado");
       assert.deepEqual(await recursosCenario(), [primeiro]);
@@ -121,7 +131,7 @@ test("Aplicação real: galeria, avatar persistido e rotas por sessão/papel com
           const barra = document.querySelector('.productSidebar').getBoundingClientRect();
           const cenario = camada.getBoundingClientRect();
           const foto = imagem.getBoundingClientRect();
-          const { maskImage, objectFit, objectPosition } = getComputedStyle(imagem);
+          const { filter, maskImage, objectFit, objectPosition } = getComputedStyle(imagem);
           const coincide = (a, b) => Math.abs(a - b) < 1;
           const estilos = () => ['.productSidebar', '.trailSearch', '.post', '.carouselStage', '.profileRefreshButton', '.guideCard'].map(seletor => {
             const el = document.querySelector(seletor);
@@ -139,14 +149,14 @@ test("Aplicação real: galeria, avatar persistido e rotas por sessão/papel com
             cobreAltura: coincide(foto.top, innerWidth <= 640 ? barra.bottom : 0) && coincide(foto.bottom, raiz.clientHeight),
             semRolagemHorizontal: raiz.scrollWidth === raiz.clientWidth,
             rolou: scrollY > 0,
-            maskImage, objectFit, objectPosition,
+            filter, maskImage, objectFit, objectPosition,
           };
         })()`);
         for (const [posicao, nome] of [[0, "topo"], [.5, "meio"], [1, "fim"]]) {
           assert.deepEqual(await medirCobertura(posicao), {
             igual: true, cobrePagina: true, cobreLargura: true, cobreAltura: true,
             semRolagemHorizontal: true, rolou: posicao > 0,
-            maskImage: "none", objectFit: "cover", objectPosition: "50% 50%",
+            filter: "brightness(0.64)", maskImage: "none", objectFit: "cover", objectPosition: "50% 50%",
           }, `${largura} px, ${nome}`);
           if (posicao !== .5) await captura(`cenario-feed-${largura}${posicao ? "-fim" : ""}`);
         }
@@ -183,12 +193,22 @@ test("Aplicação real: galeria, avatar persistido e rotas por sessão/papel com
       const catalogo = await chrome.avaliar(`(async () => {
         const { cenariosFeed, obterCenarioFeed, encerrarSessaoCenarioFeed } = await import('/src/services/cenariosFeed.js');
         const urls = Object.values(cenariosFeed);
+        const legado = ${JSON.stringify(cenarioLegado)};
+        const candidatos = urls.filter(url => url !== cenariosFeed[legado]);
         const sorteados = [];
+        const sorteadosComAnterior = [];
         const aleatorio = Math.random;
         try {
           for (let i = 0; i < urls.length; i++) {
             Math.random = () => (i + .5) / urls.length;
             sorteados.push(obterCenarioFeed('cenario-teste-' + i));
+            encerrarSessaoCenarioFeed();
+          }
+          for (let i = 0; i < candidatos.length; i++) {
+            const usuarioId = 'cenario-anterior-teste-' + i;
+            localStorage.setItem(${JSON.stringify(chaveAnterior)} + ':' + usuarioId, JSON.stringify(legado));
+            Math.random = () => (i + .5) / candidatos.length;
+            sorteadosComAnterior.push(obterCenarioFeed(usuarioId));
             encerrarSessaoCenarioFeed();
           }
         } finally {
@@ -199,9 +219,17 @@ test("Aplicação real: galeria, avatar persistido e rotas por sessão/papel com
           imagem.src = url;
           await imagem.decode();
         }
-        return { quantidade: urls.length, distintos: new Set(sorteados).size };
+        return {
+          quantidade: urls.length,
+          distintos: new Set(sorteados).size,
+          somenteWebp: urls.every(url => url.endsWith('.webp')),
+          candidatos: candidatos.length,
+          excluiuAnterior: sorteadosComAnterior.every((url, i) => url === candidatos[i]),
+        };
       })()`);
-      assert.deepEqual(catalogo, { quantidade: 10, distintos: 10 });
+      assert.deepEqual(catalogo, {
+        quantidade: 10, distintos: 10, somenteWebp: true, candidatos: 9, excluiuAnterior: true,
+      });
     });
 
     await t.test("matriz responsiva das telas principais", async () => {
@@ -289,19 +317,32 @@ test("Aplicação real: galeria, avatar persistido e rotas por sessão/papel com
     await t.test("Feed navega dentro do cartão e abre ampliação somente ao clicar", async () => {
       db = [post(1, "approved", 3)];await chrome.viewport(1280, 1000);await abrir("/trilhas");await esperar(() => chrome.avaliar("Boolean(document.querySelector('.postPhoto img')?.naturalWidth)"), "Feed");
       assert.equal(await chrome.avaliar("document.querySelector('dialog')===null && Boolean(document.querySelector('.post .photoOpenControl'))"),true);
-      assert.match(await chrome.avaliar("document.querySelector('.postPhoto img').src"),/variante=detalhe$/);
+      const primeira = await chrome.avaliar("document.querySelector('.postPhoto img').src");
+      assert.match(primeira, /^blob:/);
       assert.equal(requests.filter(r=>r.url.endsWith('variante=detalhe')).length,1);
       await chrome.avaliar("document.querySelector('.carouselControls [aria-label=\"Próxima foto\"]').click();true");
       await esperar(()=>chrome.avaliar("document.querySelector('.carouselControls span')?.textContent==='2 de 3'"),"segunda foto");
+      await esperar(() => chrome.avaliar("Boolean(document.querySelector('.postPhoto img')?.naturalWidth)"), "segunda foto carregada");
       await chrome.avaliar("document.querySelector('.feedCarousel').focus();true");await chrome.pressionarTecla('ArrowLeft');
       await esperar(()=>chrome.avaliar("document.querySelector('.carouselControls span')?.textContent==='1 de 3'"),"teclado");
       const medidas=await chrome.avaliar("(()=>{const p=document.querySelector('.post').getBoundingClientRect(),f=document.querySelector('.feed').getBoundingClientRect();return {razao:p.width/f.width,centro:Math.abs(p.left+p.width/2-f.left-f.width/2)};})()");
       assert.ok(Math.abs(medidas.razao-.75)<.01);assert.ok(medidas.centro<1);await captura('feed-carrossel-desktop');
       await esperar(()=>chrome.avaliar("Boolean(document.querySelector('.post .photoOpenControl'))"),"foto pronta para ampliar");
+      const detalhes = () => requests.filter((r) => r.url.endsWith("variante=detalhe")).length;
+      assert.equal(detalhes(), 2);
+      assert.equal(await chrome.avaliar("document.querySelector('.postPhoto img').src"), primeira);
       await chrome.avaliar("document.querySelector('.post .photoOpenControl').click();true");await modal("1 de 3");await fotoPronta();
-      await chrome.pressionarTecla('ArrowRight');await modal("2 de 3");await chrome.pressionarTecla('Escape');
+      assert.equal(await chrome.avaliar("document.querySelector('dialog img').src"), primeira);
+      await chrome.pressionarTecla('ArrowRight');await modal("2 de 3");await fotoPronta();await chrome.pressionarTecla('Escape');
       await esperar(()=>chrome.avaliar("!document.querySelector('dialog')"),"fechamento por Escape");
       assert.equal(await chrome.avaliar("document.querySelector('.carouselControls span').textContent"),"1 de 3");
+      assert.equal(detalhes(), 2);
+      await chrome.avaliar("document.querySelector('.productNav a[href=\"/perfil\"]').click()");
+      await esperar(() => chrome.avaliar("Boolean(document.querySelector('.profilePage'))"), "Perfil");
+      await chrome.avaliar("document.querySelector('.productNav a[href=\"/trilhas\"]').click()");
+      await esperar(() => chrome.avaliar("Boolean(document.querySelector('.postPhoto img')?.naturalWidth)"), "Feed remontado");
+      assert.equal(await chrome.avaliar("document.querySelector('.postPhoto img').src"), primeira);
+      assert.equal(detalhes(), 2);
     });
     await t.test("carrossel aceita deslize real e preserva rolagem vertical no celular", async () => {
       db=[post(1,'approved',3)];await chrome.viewport(390,844);await abrir('/trilhas');await esperar(()=>chrome.avaliar("Boolean(document.querySelector('.postPhoto img')?.naturalWidth)"),'Feed');
@@ -311,12 +352,19 @@ test("Aplicação real: galeria, avatar persistido e rotas por sessão/papel com
       assert.equal(await chrome.avaliar("document.querySelector('dialog')===null"),true);await esperar(()=>chrome.avaliar("Boolean(document.querySelector('.postPhoto img')?.naturalWidth)"),'imagem após deslize');await captura('feed-carrossel-mobile');
       for(const largura of [390,768,1280]){await chrome.viewport(largura,1000);assert.equal(await chrome.avaliar("document.documentElement.scrollWidth>innerWidth"),false);}
     });
-    await t.test("Perfil usa detalhe privado por Blob, posição, erro legado e revogação ao navegar", async () => {
+    await t.test("Perfil reutiliza detalhes privados na galeria e revoga suas URLs no logout", async () => {
       db = [post(2, "pending", 3)];db[0].fotos[2].legada = true;await abrir("/perfil");await esperar(() => chrome.avaliar("document.querySelectorAll('.profilePostPhoto').length===3"), "Perfil");
       await chrome.avaliar("document.querySelectorAll('.profilePostPhoto .photoOpenControl')[1].click();true");await modal("2 de 3");await fotoPronta();const url = await chrome.avaliar("document.querySelector('dialog img').src");assert.match(url, /^blob:/);
       assert.ok(requests.some((r) => r.url.includes("/trilhas/minhas/") && r.url.endsWith("variante=detalhe") && r.headers.cookie.includes("synthetic=1")));
-      await clicar("← Anterior", "dialog");await modal("1 de 3");await fotoPronta();assert.equal(await chrome.avaliar(`window.urls.revogadas.includes(${JSON.stringify(url)})`), true);await captura("galeria-perfil");await chrome.viewport(390, 844);await captura("galeria-perfil-mobile");await chrome.viewport(1280, 1000);
-      await clicar("Próxima →", "dialog");await modal("2 de 3");await fotoPronta();const antes = requests.length;await clicar("Próxima →", "dialog");await modal("3 de 3");await esperar(async () => (await texto()).includes("Foto indisponível."), "legada");assert.equal(requests.length, antes);await fechar();await captura("perfil-multiplas-fotos");
+      await clicar("← Anterior", "dialog");await modal("1 de 3");await fotoPronta();assert.equal(await chrome.avaliar(`window.urls.revogadas.includes(${JSON.stringify(url)})`), false);await captura("galeria-perfil");await chrome.viewport(390, 844);await captura("galeria-perfil-mobile");await chrome.viewport(1280, 1000);
+      const antes = requests.length;
+      await clicar("Próxima →", "dialog");await modal("2 de 3");await fotoPronta();
+      assert.equal(await chrome.avaliar("document.querySelector('dialog img').src"), url);
+      await clicar("Próxima →", "dialog");await modal("3 de 3");await esperar(async () => (await texto()).includes("Foto indisponível."), "legada");
+      assert.equal(requests.length, antes);await fechar();await captura("perfil-multiplas-fotos");
+      await clicar("Sair", ".productNav");
+      await esperar(() => chrome.avaliar("Boolean(document.getElementById('identificador'))"), "logout");
+      await esperar(() => chrome.avaliar(`window.urls.revogadas.includes(${JSON.stringify(url)})`), "revogação da URL privada");
     });
     await t.test("erro Blob mantém mensagem; fechar durante download cancela sem criar URL tardia", async () => {
       db = [post(2, "rejected")];modo.erroDetalhe = true;await abrir("/perfil");await esperar(() => chrome.avaliar("Boolean(document.querySelector('.profilePostPhoto button'))"), "fotos");await chrome.avaliar("document.querySelector('.profilePostPhoto button').click();true");await modal("1 de 2");await esperar(async () => (await texto()).includes("Foto privada indisponível."), "erro Blob");await fechar();

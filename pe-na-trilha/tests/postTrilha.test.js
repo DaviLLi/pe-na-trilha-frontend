@@ -19,9 +19,8 @@ const publicacao = (fotos = [{ _id: fotoId, url: caminho() }]) => ({
   _id: id, titulo: "Trilha sintética", descricao: "Descrição preservada no Feed.",
   endereco: "Local sintético", status: "approved", fotos,
 });
-// PNG de 1 pixel, exclusivamente sintético: exercita load do img; este componente
-// não valida formato binário. O serviço privado aprovado tem seus próprios testes.
-const pixel = Buffer.from("iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mP8/x8AAwMCAO+a95sAAAAASUVORK5CYII=", "base64");
+// WebP sintético de 1 pixel, no mesmo formato retornado pelo backend.
+const pixel = Buffer.from("UklGRjIAAABXRUJQVlA4ICYAAABwAQCdASoBAAEAAUAmJaACdAFAAAD+9BgY3v/kGP9DX+Cu7AAAAA==", "base64");
 const entrada = `
   import React from 'react';
   import { createRoot } from 'react-dom/client';
@@ -72,7 +71,7 @@ test("PostTrilha: integração visual das fotos públicas em navegador", {
                 if (res.destroyed) return;
                 res.setHeader("Cache-Control", "no-store");
                 if (modo === "erro" || modo === "aguardarErro") { res.statusCode = 404; res.end(); }
-                else { res.setHeader("Content-Type", "image/png"); res.end(pixel); }
+                else { res.setHeader("Content-Type", "image/webp"); res.end(pixel); }
               };
               if (modo.startsWith("aguardar")) respostasPendentes.push(responder); else responder();
               return;
@@ -105,14 +104,16 @@ test("PostTrilha: integração visual das fotos públicas em navegador", {
       await render(publicacao([{ _id: fotoId, url: caminho() }, { _id: outraFotoId, url: caminho(outraFotoId) }]));
       await esperar(() => respostasPendentes.length > 0, "request da miniatura");
       const inicial = await estado();
-      assert.equal(inicial.src, origem + caminho() + "?variante=detalhe");
+      assert.equal(inicial.src, null);
+      assert.ok(requisicoes.includes(caminho() + "?variante=detalhe"));
       assert.equal(inicial.busy, "true"); assert.match(inicial.texto, /Carregando foto/);
-      assert.match(inicial.texto, /1 de 2/); assert.equal(inicial.loading, "lazy");
+      assert.match(inicial.texto, /1 de 2/);
       assert.ok(inicial.largura > 0 && inicial.altura > 0);
       respostasPendentes.shift()();
       await esperar(async () => (await estado()).busy === "false", "load da imagem");
       const carregada = await estado();
-      assert.ok(carregada.src); assert.doesNotMatch(carregada.texto, /Carregando/);
+      assert.match(carregada.src, /^blob:/); assert.equal(carregada.loading, "lazy");
+      assert.doesNotMatch(carregada.texto, /Carregando/);
       assert.equal(carregada.altura, inicial.altura); assert.equal(carregada.largura, inicial.largura);
       assert.equal(requisicoes.filter(url => url.endsWith("variante=detalhe")).length, 1); // Detalhe somente da foto ativa.
     });
@@ -172,7 +173,8 @@ test("PostTrilha: integração visual das fotos públicas em navegador", {
       assert.doesNotMatch(inicial.texto, /Não foi possível/);
       respostasPendentes.shift()();
       await esperar(async () => (await estado()).busy === "false", "nova imagem");
-      assert.equal((await estado()).src, origem + caminho(outraFotoId) + "?variante=detalhe");
+      assert.match((await estado()).src, /^blob:/);
+      assert.ok(requisicoes.includes(caminho(outraFotoId) + "?variante=detalhe"));
     });
     await t.test("renderizações com mesma URL reutilizam img sem novas requisições", async () => {
       const foto = "000000000000000000000005";
@@ -185,6 +187,7 @@ test("PostTrilha: integração visual das fotos públicas em navegador", {
         if (fase === "carregada") {
           respostasPendentes.shift()();
           await esperar(async () => (await estado()).busy === "false", "load antes de repetir render");
+          await chrome.avaliar("window.imagemOriginal = document.querySelector('.postPhoto img'); true");
         }
         for (let i = 0; i < 4; i++) {
           await render({ ...publicacao(fotos.map((item) => ({ ...item }))), titulo: `Mesma URL ${fase} ${i}` });

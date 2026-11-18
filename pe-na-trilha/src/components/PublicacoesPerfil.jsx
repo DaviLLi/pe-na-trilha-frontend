@@ -5,49 +5,20 @@ import { Link } from "react-router-dom";
 import { useAuth } from "../contexts/useAuth.js";
 import { permissoesPublicacaoPropria } from "../services/publicacaoValidation.js";
 import { listarMinhasTrilhas, excluirTrilha, reenviarTrilha } from "../services/trilhasService.js";
-import { buscarImagemPrivada } from "../services/imagensPublicacoesService.js";
+import { useImagemPublicacao } from "../contexts/useImagemPublicacao.js";
 import { obterMensagemErro } from "../services/api.js";
 import GaleriaPublicacao from "./GaleriaPublicacao.jsx";
 import DetalhesTrilha from "./DetalhesTrilha.jsx";
 
 const ESTADOS = { pending: "Pendente", approved: "Aprovada", rejected: "Rejeitada" };
 
-export function FotoPrivadaPerfil({ url, titulo, aoAbrir }) {
-  const [imagem, setImagem] = useState({ estado: "carregando", url: null, mensagem: "" });
-  const recursoAtual = useRef(null);
-  useEffect(() => {
-    const controller = new AbortController();
-    let ativa = true, recurso;
-    async function carregar() {
-      try {
-        const blob = await buscarImagemPrivada(url, { variante: "miniatura", signal: controller.signal });
-        if (!ativa || controller.signal.aborted) return;
-        if (!blob) { setImagem({ estado: "erro", url: null, mensagem: "Foto indisponível." }); return; }
-        const objectUrl = URL.createObjectURL(blob);
-        let revogada = false;
-        recurso = { liberar() { if (!revogada) { URL.revokeObjectURL(objectUrl); revogada = true; } } };
-        recursoAtual.current = recurso;
-        setImagem({ estado: "carregando", url: objectUrl, mensagem: "" });
-      } catch (erro) {
-        if (ativa && !controller.signal.aborted && !axios.isCancel(erro)) {
-          setImagem({ estado: "erro", url: null, mensagem: obterMensagemErro(erro) });
-        }
-      }
-    }
-    carregar();
-    return () => { ativa = false; controller.abort(); recurso?.liberar(); };
-  }, [url]);
-
-  function falhouAoExibir() {
-    recursoAtual.current?.liberar();
-    recursoAtual.current = null;
-    setImagem({ estado: "erro", url: null, mensagem: "Não foi possível exibir a foto." });
-  }
+export function FotoPrivadaPerfil({ foto, titulo, aoAbrir }) {
+  const imagem = useImagemPublicacao(foto, { variante: "miniatura" });
   return (
     <figure className="profilePostPhoto" aria-busy={imagem.estado === "carregando"}>
       {aoAbrir ? <button className="photoOpenControl" type="button" aria-label={`Ampliar foto de ${titulo}`} onClick={aoAbrir}><span>Ampliar ↗</span></button> : null}
       {imagem.url ? <img src={imagem.url} alt={`Foto da publicação ${titulo}`} loading="lazy"
-        onLoad={() => setImagem((atual) => ({ ...atual, estado: "pronta" }))} onError={falhouAoExibir} /> : null}
+        onError={imagem.aoFalhar} /> : null}
       {imagem.estado !== "pronta" ? <figcaption role="status">
         {imagem.estado === "carregando" ? "Carregando foto..." : imagem.mensagem}
       </figcaption> : null}
@@ -135,7 +106,7 @@ export default function PublicacoesPerfil({ aoAtualizar } = {}) {
         <p className="profileRejection"><strong>Motivo da rejeição:</strong> {publicacao.motivoRejeicao}</p> : null}
       {publicacao.fotos?.length ? <div className="profilePostPhotos">
         {publicacao.fotos.map((foto, indice) => typeof foto.url === "string" && foto.url.startsWith("/trilhas/minhas/") ?
-          <FotoPrivadaPerfil key={`${foto._id}:${foto.url}:${foto.updatedAt || ""}`} url={foto.url} titulo={publicacao.titulo} aoAbrir={() => setGaleria({ id: publicacao._id, indice })} /> :
+          <FotoPrivadaPerfil key={`${foto._id}:${foto.url}:${foto.updatedAt || ""}`} foto={foto} titulo={publicacao.titulo} aoAbrir={() => setGaleria({ id: publicacao._id, indice })} /> :
           <figure className="profilePostPhoto" key={foto._id}><button className="photoOpenControl" type="button" aria-label={`Ampliar foto de ${publicacao.titulo}`} onClick={() => setGaleria({ id: publicacao._id, indice })}><span>Ver fotos ↗</span></button><figcaption>Foto indisponível</figcaption></figure>)}
       </div> : <p className="profileUnavailable">Nenhuma foto cadastrada.</p>}
       <div className="ownerPublicationActions">

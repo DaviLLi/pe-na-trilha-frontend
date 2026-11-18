@@ -1,40 +1,14 @@
-import axios from "axios";
 import { useEffect, useRef, useState } from "react";
 import { createPortal } from "react-dom";
-import { buscarImagemPrivada, obterUrlImagemPublica } from "../services/imagensPublicacoesService.js";
-import { obterMensagemErro } from "../services/api.js";
+import { useImagemPublicacao } from "../contexts/useImagemPublicacao.js";
 
 function ImagemAmpliada({ foto, contexto, titulo }) {
-  const [imagem, setImagem] = useState({ url: null, estado: "carregando", mensagem: "" });
-  const recurso = useRef(null);
-  let publica = null;
-  try { if (contexto === "publico") publica = obterUrlImagemPublica(foto?.url, { variante: "detalhe" }); } catch { /* URL não autorizada: nunca usada como alternativa. */ }
-  useEffect(() => {
-    if (contexto === "publico") return;
-    const controller = new AbortController();let ativa = true, liberar;
-    async function carregar() {
-      try {
-        if (typeof foto?.url !== "string" || !foto.url.startsWith("/trilhas/minhas/")) throw new Error("Foto indisponível.");
-        const blob = await buscarImagemPrivada(foto.url, { variante: "detalhe", signal: controller.signal });
-        if (!ativa || controller.signal.aborted) return;
-        if (!blob) throw new Error("Foto indisponível.");
-        const url = URL.createObjectURL(blob);let revogada = false;
-        liberar = () => { if (!revogada) { URL.revokeObjectURL(url);revogada = true; } };recurso.current = liberar;
-        setImagem({ url, estado: "carregando", mensagem: "" });
-      } catch (falha) {
-        if (ativa && !controller.signal.aborted && !axios.isCancel(falha)) setImagem({ url: null, estado: "erro", mensagem: falha.response ? obterMensagemErro(falha) : "Foto indisponível." });
-      }
-    }
-    carregar();return () => { ativa = false;controller.abort();liberar?.(); };
-  }, [foto?.url, contexto]);
-  const url = contexto === "publico" ? publica : imagem.url;
-  const indisponivel = contexto === "publico" && !publica;
-  const falhou = imagem.estado === "erro" || indisponivel;
-  return <div className="galleryImage" aria-busy={!falhou && imagem.estado === "carregando"}>
-    {url && !falhou ? <img src={url} alt={`Foto ampliada de ${titulo}`} draggable="false" onLoad={() => setImagem((atual) => ({ ...atual, estado: "pronta" }))} onError={() => {
-      recurso.current?.();setImagem({ url: null, estado: "erro", mensagem: "Não foi possível exibir a foto." });
-    }} /> : null}
-    {falhou ? <p role="status">{imagem.mensagem || "Foto indisponível."}</p> : imagem.estado === "carregando" ? <p className="galleryLoading" role="status">Carregando foto...</p> : null}
+  const publica = contexto === "publico";
+  const permitida = publica || foto?.url?.startsWith?.("/trilhas/minhas/");
+  const imagem = useImagemPublicacao(permitida ? foto : null, { contexto: publica ? "publico" : "privado" });
+  return <div className="galleryImage" aria-busy={imagem.estado === "carregando"}>
+    {imagem.url ? <img src={imagem.url} alt={`Foto ampliada de ${titulo}`} draggable="false" onError={imagem.aoFalhar} /> : null}
+    {imagem.estado === "erro" ? <p role="status">{imagem.mensagem}</p> : imagem.estado === "carregando" ? <p className="galleryLoading" role="status">Carregando foto...</p> : null}
   </div>;
 }
 

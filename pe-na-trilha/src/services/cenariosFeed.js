@@ -1,10 +1,14 @@
-const arquivos = import.meta.glob("../assets/cenarios-feed/*.png", {
+const arquivos = import.meta.glob("../assets/cenarios-feed/*.webp", {
   eager: true,
   import: "default",
   query: "?url",
 });
 export const cenariosFeed = Object.fromEntries(
-  Object.entries(arquivos).map(([caminho, url]) => [caminho.split("/").pop(), url]),
+  Object.entries(arquivos).map(([caminho, url]) => {
+    // O nome original em PNG é o identificador persistido do cenário.
+    const nomeOriginal = caminho.split("/").pop().replace(/\.webp$/, ".png");
+    return [nomeOriginal, url];
+  }),
 );
 
 const chaveSessao = "pe-na-trilha:cenario-feed:sessao:v1";

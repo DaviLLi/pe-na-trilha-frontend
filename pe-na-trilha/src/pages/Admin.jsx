@@ -2,42 +2,15 @@ import axios from "axios";
 import { useEffect, useRef, useState } from "react";
 import { useAuth } from "../contexts/useAuth";
 import { listarTrilhasPendentes, moderarTrilha } from "../services/trilhasService.js";
-import { buscarImagemPrivada } from "../services/imagensPublicacoesService.js";
+import { useImagemPublicacao } from "../contexts/useImagemPublicacao.js";
 import { obterMensagemErro } from "../services/api.js";
 import DetalhesTrilha from "../components/DetalhesTrilha.jsx";
 
-function FotoAdministrativa({ url, titulo }) {
-  const [imagem, setImagem] = useState({ url: null, estado: "carregando", mensagem: "" });
-  const recursoAtual = useRef(null);
-  useEffect(() => {
-    const controller = new AbortController();
-    let ativa = true, recurso;
-    async function carregar() {
-      try {
-        const blob = await buscarImagemPrivada(url, { variante: "miniatura", signal: controller.signal });
-        if (!ativa || controller.signal.aborted) return;
-        if (!blob) { setImagem({ url: null, estado: "erro", mensagem: "Foto indisponível." }); return; }
-        const objectUrl = URL.createObjectURL(blob);
-        let revogada = false;
-        recurso = { liberar() { if (!revogada) { URL.revokeObjectURL(objectUrl); revogada = true; } } };
-        recursoAtual.current = recurso;
-        setImagem({ url: objectUrl, estado: "carregando", mensagem: "" });
-      } catch (erro) {
-        if (ativa && !controller.signal.aborted && !axios.isCancel(erro)) {
-          setImagem({ url: null, estado: "erro", mensagem: obterMensagemErro(erro) });
-        }
-      }
-    }
-    carregar();
-    return () => { ativa = false; controller.abort(); recurso?.liberar(); };
-  }, [url]);
-  function falhou() {
-    recursoAtual.current?.liberar(); recursoAtual.current = null;
-    setImagem({ url: null, estado: "erro", mensagem: "Não foi possível exibir a foto." });
-  }
+function FotoAdministrativa({ foto, titulo }) {
+  const imagem = useImagemPublicacao(foto, { variante: "miniatura" });
   return <figure className="adminPhoto" aria-busy={imagem.estado === "carregando"}>
     {imagem.url ? <img src={imagem.url} alt={`Foto para moderação de ${titulo}`} loading="lazy"
-      onLoad={() => setImagem((atual) => ({ ...atual, estado: "pronta" }))} onError={falhou} /> : null}
+      onError={imagem.aoFalhar} /> : null}
     {imagem.estado !== "pronta" ? <figcaption role="status">{imagem.estado === "carregando" ? "Carregando foto..." : imagem.mensagem}</figcaption> : null}
   </figure>;
 }
@@ -84,7 +57,7 @@ function PublicacaoPendente({ publicacao, aoDecidir }) {
     <DetalhesTrilha trilha={publicacao} />
     {publicacao.fotos?.length ? <div className="adminPhotos">
       {publicacao.fotos.map((foto) => typeof foto.url === "string" && foto.url.startsWith("/admin/trilhas/") ?
-        <FotoAdministrativa key={`${foto._id}:${foto.url}:${foto.updatedAt || ""}`} url={foto.url} titulo={publicacao.titulo} /> :
+        <FotoAdministrativa key={`${foto._id}:${foto.url}:${foto.updatedAt || ""}`} foto={foto} titulo={publicacao.titulo} /> :
         <figure className="adminPhoto" key={foto._id}><figcaption>Foto indisponível</figcaption></figure>)}
     </div> : <p>Nenhuma foto cadastrada.</p>}
     <div className="adminDecision">
