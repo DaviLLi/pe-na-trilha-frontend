@@ -2,30 +2,41 @@ import { spawn } from "node:child_process";
 import { existsSync } from "node:fs";
 import { Buffer } from "node:buffer";
 import process from "node:process";
+import { setTimeout as aguardar } from "node:timers/promises";
 
 // Chrome instalado localmente; nenhum pacote é baixado. Comunicação CDP por pipe.
 export const chromeBin = process.env.PNT_CHROME_BIN || "/usr/bin/google-chrome";
 export const chromeDisponivel = existsSync(chromeBin);
 
+const prazoInicializacao = 30_000;
+const prazoComando = 10_000;
+const prazoEncerramento = 2_000;
+
 export async function abrirChrome(diretorio, { simularMouse = false } = {}) {
   const chrome = spawn(chromeBin, [
-    "--headless=new", "--no-sandbox", "--remote-debugging-pipe",
+    "--headless", "--no-sandbox", "--remote-debugging-pipe",
     `--user-data-dir=${diretorio}`, "--no-first-run", "--no-default-browser-check",
     "--disable-background-networking", "--disable-component-update", "--disable-sync",
     "--disable-default-apps", "--disable-domain-reliability", "--metrics-recording-only",
     "--no-proxy-server", "--disable-gpu", "--disable-dev-shm-usage",
     // O Chrome headless em Linux pode não detectar um mouse físico.
     ...(simularMouse ? ["--blink-settings=primaryPointerType=4,availablePointerTypes=4,primaryHoverType=2,availableHoverTypes=2"] : []),
+    "about:blank",
   ], { stdio: ["ignore", "ignore", "pipe", "pipe", "pipe"] });
-  let sequencia = 0, buffer = Buffer.alloc(0), stderr = "", origemPermitida;
+  let sequencia = 0, buffer = Buffer.alloc(0), stderr = "", origemPermitida, erroConexao, fechamento;
   const pendentes = new Map(), diagnosticos = [];
+  const fimProcesso = new Promise((resolve) => chrome.once("close", () => resolve(true)));
   chrome.stderr.on("data", (chunk) => { stderr = (stderr + chunk.toString()).slice(-4000); });
-  const rejeitarTodos = (erro) => {
-    for (const { reject, timer } of pendentes.values()) { clearTimeout(timer); reject(erro); }
+  function rejeitarTodos(erro) {
+    erroConexao ??= erro;
+    for (const { reject, timer } of pendentes.values()) { clearTimeout(timer); reject(erroConexao); }
     pendentes.clear();
-  };
+  }
   chrome.on("error", rejeitarTodos);
-  chrome.on("exit", () => rejeitarTodos(new Error(`Chrome encerrado: ${stderr}`)));
+  chrome.once("exit", (codigo, sinal) => rejeitarTodos(new Error(`Chrome encerrado (${sinal ?? codigo}): ${stderr}`)));
+  chrome.stdio[3].on("error", rejeitarTodos);
+  chrome.stdio[4].on("error", rejeitarTodos);
+  chrome.stdio[4].once("end", () => rejeitarTodos(new Error(`Chrome fechou o canal CDP: ${stderr}`)));
   chrome.stdio[4].on("data", (chunk) => {
     buffer = Buffer.concat([buffer, chunk]);
     let fim;
@@ -44,29 +55,62 @@ export async function abrirChrome(diretorio, { simularMouse = false } = {}) {
       if (pacote.error) chamada.reject(new Error(pacote.error.message)); else chamada.resolve(pacote.result);
     }
   });
-  function enviar(method, params = {}, sessionId) {
+  function erroTimeout(method, limite) {
+    return new Error(`Timeout CDP: ${method} após ${Math.ceil(limite)} ms; ${stderr || "sem saída do Chrome em stderr"}`);
+  }
+
+  function enviar(method, params = {}, sessionId, limite = prazoComando) {
+    if (erroConexao) return Promise.reject(erroConexao);
     return new Promise((resolve, reject) => {
       const id = ++sequencia;
-      const timer = setTimeout(() => { pendentes.delete(id); reject(new Error(`Timeout CDP: ${method}; ${stderr}`)); }, 10000);
+      const timer = setTimeout(() => { pendentes.delete(id); reject(erroTimeout(method, limite)); }, limite);
       pendentes.set(id, { resolve, reject, timer });
       chrome.stdio[3].write(JSON.stringify({ id, method, params, sessionId }) + "\0", (erro) => {
-        if (erro) { pendentes.delete(id); clearTimeout(timer); reject(erro); }
+        if (erro) rejeitarTodos(erro);
       });
     });
   }
-  async function fechar() {
-    if (chrome.exitCode !== null) return;
-    await new Promise((resolve) => {
-      const timer = setTimeout(() => chrome.kill("SIGKILL"), 2000);
-      chrome.once("exit", () => { clearTimeout(timer); resolve(); });
-      chrome.kill("SIGTERM");
-    });
+
+  function esperarFechamento() {
+    return Promise.race([fimProcesso, aguardar(prazoEncerramento, false, { ref: false })]);
   }
+
+  async function encerrar() {
+    if (!erroConexao) {
+      // Browser.close permite ao Chrome encerrar os próprios subprocessos antes dos sinais.
+      void enviar("Browser.close", {}, undefined, prazoEncerramento).catch(() => {});
+    }
+    if (await esperarFechamento()) return;
+    for (const sinal of ["SIGTERM", "SIGKILL"]) {
+      chrome.kill(sinal);
+      if (await esperarFechamento()) return;
+    }
+    throw new Error(`Chrome não encerrou após SIGKILL: ${stderr}`);
+  }
+
+  function fechar() {
+    fechamento ??= encerrar();
+    return fechamento;
+  }
+
+  const limiteInicializacao = performance.now() + prazoInicializacao;
+  function enviarInicializacao(method, params, sessionId) {
+    const restante = limiteInicializacao - performance.now();
+    if (restante <= 0) throw erroTimeout(`inicialização — ${method}`, prazoInicializacao);
+    return enviar(method, params, sessionId, restante);
+  }
+
   try {
-    const { targetId } = await enviar("Target.createTarget", { url: "about:blank" });
-    const { sessionId } = await enviar("Target.attachToTarget", { targetId, flatten: true });
-    await enviar("Page.enable", {}, sessionId);
-    await enviar("Runtime.enable", {}, sessionId);
+    // Reaproveita a aba aberta pelo Chrome enquanto o CDP e o renderizador inicializam.
+    let aba;
+    while (!aba) {
+      const { targetInfos } = await enviarInicializacao("Target.getTargets");
+      aba = targetInfos.find(({ type, url }) => type === "page" && url === "about:blank");
+      if (!aba) await aguardar(50);
+    }
+    const { sessionId } = await enviarInicializacao("Target.attachToTarget", { targetId: aba.targetId, flatten: true });
+    await enviarInicializacao("Page.enable", {}, sessionId);
+    await enviarInicializacao("Runtime.enable", {}, sessionId);
     return {
       fechar,
       diagnostico: () => diagnosticos.join("\n"),
@@ -108,5 +152,12 @@ export async function abrirChrome(diretorio, { simularMouse = false } = {}) {
         return resultado.result.value;
       },
     };
-  } catch (erro) { await fechar(); throw erro; }
+  } catch (erro) {
+    try {
+      await fechar();
+    } catch (erroFechamento) {
+      throw new Error(`${erro.message}; ${erroFechamento.message}`, { cause: erro });
+    }
+    throw erro;
+  }
 }
