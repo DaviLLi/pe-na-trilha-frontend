@@ -7,13 +7,15 @@ import process from "node:process";
 export const chromeBin = process.env.PNT_CHROME_BIN || "/usr/bin/google-chrome";
 export const chromeDisponivel = existsSync(chromeBin);
 
-export async function abrirChrome(diretorio) {
+export async function abrirChrome(diretorio, { simularMouse = false } = {}) {
   const chrome = spawn(chromeBin, [
     "--headless=new", "--no-sandbox", "--remote-debugging-pipe",
     `--user-data-dir=${diretorio}`, "--no-first-run", "--no-default-browser-check",
     "--disable-background-networking", "--disable-component-update", "--disable-sync",
     "--disable-default-apps", "--disable-domain-reliability", "--metrics-recording-only",
     "--no-proxy-server", "--disable-gpu", "--disable-dev-shm-usage",
+    // O Chrome headless em Linux pode não detectar um mouse físico.
+    ...(simularMouse ? ["--blink-settings=primaryPointerType=4,availablePointerTypes=4,primaryHoverType=2,availableHoverTypes=2"] : []),
   ], { stdio: ["ignore", "ignore", "pipe", "pipe", "pipe"] });
   let sequencia = 0, buffer = Buffer.alloc(0), stderr = "", origemPermitida;
   const pendentes = new Map(), diagnosticos = [];
@@ -69,8 +71,9 @@ export async function abrirChrome(diretorio) {
       fechar,
       diagnostico: () => diagnosticos.join("\n"),
       async pressionarTecla(key) {
-        const codigo = { Escape: 27, ArrowLeft: 37, ArrowRight: 39 }[key];
-        await enviar("Input.dispatchKeyEvent", { type: "keyDown", key, code: key, windowsVirtualKeyCode: codigo }, sessionId);
+        const codigo = { Enter: 13, Escape: 27, ArrowLeft: 37, ArrowRight: 39, Home: 36, End: 35 }[key];
+        const texto = key === "Enter" ? { text: "\r", unmodifiedText: "\r" } : {};
+        await enviar("Input.dispatchKeyEvent", { type: "keyDown", key, code: key, windowsVirtualKeyCode: codigo, ...texto }, sessionId);
         await enviar("Input.dispatchKeyEvent", { type: "keyUp", key, code: key, windowsVirtualKeyCode: codigo }, sessionId);
       },
       async deslizar(x, y, destinoX) {
@@ -85,9 +88,13 @@ export async function abrirChrome(diretorio) {
         await enviar("Input.dispatchMouseEvent", { type: "mousePressed", button: "left", clickCount: 1, x, y }, sessionId);
         await enviar("Input.dispatchMouseEvent", { type: "mouseReleased", button: "left", clickCount: 1, x, y }, sessionId);
       },
+      moverMouse: (x, y) => enviar("Input.dispatchMouseEvent", { type: "mouseMoved", x, y }, sessionId),
+      emularToque: (enabled) => enviar("Emulation.setTouchEmulationEnabled", { enabled }, sessionId),
+      reduzirMovimento: () => enviar("Emulation.setEmulatedMedia",
+        { features: [{ name: "prefers-reduced-motion", value: "reduce" }] }, sessionId),
       capturar: () => enviar("Page.captureScreenshot", { format: "png" }, sessionId),
-      viewport: (width, height = 800) => enviar("Emulation.setDeviceMetricsOverride",
-        { width, height, deviceScaleFactor: 1, mobile: false }, sessionId),
+      viewport: (width, height = 800, mobile = false) => enviar("Emulation.setDeviceMetricsOverride",
+        { width, height, deviceScaleFactor: 1, mobile }, sessionId),
       async navegar(url) {
         origemPermitida = new URL(url).origin;
         await enviar("Fetch.enable", { patterns: [{ urlPattern: "http://*" }, { urlPattern: "https://*" }] }, sessionId);

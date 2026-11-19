@@ -1,5 +1,6 @@
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { enviarFotoPerfil } from "../services/fotoPerfilService.js";
+import { criarCacheImagensPublicacoes } from "../services/cacheImagensPublicacoes.js";
 import AuthContext from "./authContextValue.js";
 import {
   definirTokenCsrf,
@@ -15,19 +16,41 @@ import {
 } from "../services/authService.js";
 
 export function AuthProvider({ children }) {
-  const [usuario, setUsuario] = useState(null);
+  const [sessao, setSessao] = useState({ usuario: null, cacheImagens: null });
+  const sessaoAtual = useRef(sessao);
+  const { usuario, cacheImagens } = sessao;
   const [carregandoSessao, setCarregandoSessao] = useState(true);
   const [erroRestauracao, setErroRestauracao] = useState(false);
 
+  const definirUsuario = useCallback((valor, novaSessao = false) => {
+    const anterior = sessaoAtual.current;
+    const proximoUsuario = typeof valor === "function" ? valor(anterior.usuario) : valor;
+    const mesmaConta = proximoUsuario?._id && proximoUsuario._id === anterior.usuario?._id
+      && proximoUsuario.perfil === anterior.usuario.perfil;
+    const reutilizar = mesmaConta && !novaSessao;
+    if (!reutilizar) anterior.cacheImagens?.encerrar();
+    const proxima = {
+      usuario: proximoUsuario,
+      cacheImagens: proximoUsuario?._id
+        ? (reutilizar ? anterior.cacheImagens : criarCacheImagensPublicacoes())
+        : null,
+    };
+    sessaoAtual.current = proxima;
+    setSessao(proxima);
+  }, []);
+
   const logoutLocal = useCallback(() => {
     definirTokenCsrf(null);
-    setUsuario(null);
+    definirUsuario(null);
     setErroRestauracao(false);
-  }, []);
+  }, [definirUsuario]);
 
   useEffect(() => {
     definirTratadorNaoAutorizado(logoutLocal);
-    return () => definirTratadorNaoAutorizado(null);
+    return () => {
+      definirTratadorNaoAutorizado(null);
+      sessaoAtual.current.cacheImagens?.encerrar();
+    };
   }, [logoutLocal]);
 
   const carregarSessao = useCallback(async () => {
@@ -37,7 +60,7 @@ export function AuthProvider({ children }) {
       const sessao = await renovarSessao();
       const csrf = await obterTokenCsrf();
       definirTokenCsrf(csrf);
-      setUsuario(sessao.usuario || (await buscarUsuarioAutenticado()));
+      definirUsuario(sessao.usuario || (await buscarUsuarioAutenticado()));
       return true;
     } catch (erro) {
       if (erro.response?.status === 401) {
@@ -50,7 +73,7 @@ export function AuthProvider({ children }) {
     } finally {
       setCarregandoSessao(false);
     }
-  }, [logoutLocal]);
+  }, [definirUsuario, logoutLocal]);
 
   useEffect(() => {
     carregarSessao();
@@ -61,9 +84,9 @@ export function AuthProvider({ children }) {
     const csrf = await obterTokenCsrf();
     definirTokenCsrf(csrf);
     setErroRestauracao(false);
-    setUsuario(sessao.usuario);
+    definirUsuario(sessao.usuario, true);
     return sessao.usuario;
-  }, []);
+  }, [definirUsuario]);
 
   const logout = useCallback(async () => {
     try {
@@ -83,28 +106,29 @@ export function AuthProvider({ children }) {
 
   const consultarUsuario = useCallback(async () => {
     const dadosUsuario = await buscarUsuarioAutenticado();
-    setUsuario(dadosUsuario);
+    definirUsuario(dadosUsuario);
     return dadosUsuario;
-  }, []);
+  }, [definirUsuario]);
 
   const atualizarPerfil = useCallback(async (dados, config = {}) => {
     const atualizado = await atualizarUsuarioAtual(dados, config);
     if (!config.signal?.aborted) {
-      setUsuario((atual) => atual?._id === atualizado._id ? atualizado : atual);
+      definirUsuario((atual) => atual?._id === atualizado._id ? atualizado : atual);
     }
     return atualizado;
-  }, []);
+  }, [definirUsuario]);
 
   const usuarioId = usuario?._id;
   const atualizarFotoPerfil = useCallback(async (arquivo, config = {}) => {
     const resultado = await enviarFotoPerfil(arquivo, config);
-    if (!config.signal?.aborted) setUsuario((atual) => atual?._id === usuarioId ? { ...atual, fotoPerfil: resultado.fotoPerfil } : atual);
+    if (!config.signal?.aborted) definirUsuario((atual) => atual?._id === usuarioId ? { ...atual, fotoPerfil: resultado.fotoPerfil } : atual);
     return resultado;
-  }, [usuarioId]);
+  }, [definirUsuario, usuarioId]);
 
   const valor = useMemo(
     () => ({
       usuario,
+      cacheImagens,
       autenticado: Boolean(usuario),
       carregandoSessao,
       erroRestauracao,
@@ -115,7 +139,7 @@ export function AuthProvider({ children }) {
       atualizarFotoPerfil,
       tentarRestaurarSessao: carregarSessao,
     }),
-    [usuario, carregandoSessao, erroRestauracao, login, logout, consultarUsuario, atualizarPerfil, atualizarFotoPerfil, carregarSessao],
+    [usuario, cacheImagens, carregandoSessao, erroRestauracao, login, logout, consultarUsuario, atualizarPerfil, atualizarFotoPerfil, carregarSessao],
   );
 
   return <AuthContext.Provider value={valor}>{children}</AuthContext.Provider>;

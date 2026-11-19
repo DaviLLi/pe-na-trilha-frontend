@@ -1,3 +1,4 @@
+import { calcularMedalha } from "../data/niveisMedalhas.js";
 import { useCallback, useState } from "react";
 import EditarPerfil from "../components/EditarPerfil.jsx";
 import PublicacoesPerfil from "../components/PublicacoesPerfil.jsx";
@@ -17,6 +18,7 @@ function Perfil() {
   }, [usuarioId]);
   const atuais = estatisticas?.usuarioId === usuarioId ? estatisticas : null;
   const contagens = atuais?.contagens;
+  const medalha = calcularMedalha(contagens?.aprovadas)?.atual.medalha;
   const carregandoContagens = Boolean(usuarioId) && (!atuais || atuais.carregando);
   const nome = usuario?.nomeCompleto || "Nome não informado";
   const nomeUsuario = usuario?.nomeUsuario;
@@ -24,7 +26,7 @@ function Perfil() {
 
   return (
     <main className="productMain profilePage">
-      <header className="profileCover" aria-hidden="true" />
+      <header className="profileCover" data-medalha={medalha} aria-hidden="true" />
       <section className="profileIdentity" aria-labelledby="profile-name">
         <div className="profileAvatar">
           {foto ? <img src={foto} alt={`Foto de ${nome}`} /> : <span aria-hidden="true">{nome.charAt(0).toLocaleUpperCase("pt-BR")}</span>}

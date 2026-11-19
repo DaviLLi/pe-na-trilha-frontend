@@ -1,3 +1,4 @@
+import GaleriaMedalhas from "../components/GaleriaMedalhas.jsx";
 import Medalha from "../components/Medalha";
 
 import { niveisMedalhas } from "../data/niveisMedalhas.js";
@@ -17,7 +18,7 @@ function GuiaMedalhas() {
           </li>
         ))}
       </ol>
-      <p className="integrationNote">A API ainda não fornece a contagem de trilhas aprovadas. O nível individual será exibido quando essa informação estiver disponível.</p>
+      <GaleriaMedalhas />
     </main>
   );
 }

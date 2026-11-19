@@ -462,3 +462,13 @@ body:has(.authPage) {
     transition: none;
   }
 }
+
+/* Marca do login: símbolo livre e assinatura contínua. */
+.authPage-login :is(.authBrand, .authPanelMobileBrand) { gap: .35rem; }
+.authPage-login .authBrandSymbol { flex: 0 0 auto; width: 74px; height: 74px; border: 0; border-radius: 0; background: none; object-fit: contain; mix-blend-mode: screen; }
+.authPage-login .authBrandName { color: #e5eee9; font: 700 1.45rem/1.2 var(--font-body); letter-spacing: -.025em; white-space: nowrap; }
+.authPage-login .authBrandName > strong { color: #70d5ae; font: inherit; }
+@media (max-width: 760px) {
+  .authPage-login .authBrandSymbol { width: 64px; height: 64px; }
+  .authPage-login .authBrandName { font-size: 1.3rem; }
+}
