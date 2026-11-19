@@ -298,6 +298,8 @@ test("Aplicação real: galeria, avatar persistido e rotas por sessão/papel com
         await esperar(()=>chrome.avaliar("document.querySelectorAll('.post').length===1"),'resultado por característica');await captura(`quatro-busca-${largura}`);
         await buscar('inexistente');await esperar(async()=>(await texto()).includes('Nenhum resultado para'),'sem resultado');
         await buscar('');await esperar(()=>chrome.avaliar("document.querySelectorAll('.post').length===1"),'limpar busca');
+        await chrome.avaliar("document.querySelector('.post').scrollIntoView({block:'center'})");
+        await esperar(() => chrome.avaliar("document.querySelector('.postPhoto img')?.naturalWidth > 0"), "foto após limpar busca");
       }
     });
     await t.test("visitante é redirecionado em URLs internas diretas; documentos e cadastro permanecem públicos", async () => {
@@ -305,7 +307,7 @@ test("Aplicação real: galeria, avatar persistido e rotas por sessão/papel com
       for (const path of ["/trilhas", "/perfil", "/trilhas/nova", `/trilhas/${id(1)}/editar`, "/admin", "/ajuda", "/medalhas", "/"]) {
         await abrir(path);await esperar(() => chrome.avaliar("location.pathname==='/login' && Boolean(document.getElementById('identificador'))"), "login obrigatório");assert.equal(await chrome.avaliar("document.querySelector('.productSidebar')===null"), true);
       }
-      assert.equal(requests.some((r) => r.url.startsWith("/trilhas")), false);
+      assert.deepEqual(requests.filter((r) => r.url.startsWith("/trilhas")).map((r) => r.url), []);
       for (const path of ["/cadastro", "/termos", "/privacidade"]) { await abrir(path);assert.equal(await chrome.avaliar("location.pathname"), path); }
       await chrome.navegar(origem + "/perfil");try { await esperar(() => chrome.avaliar("location.pathname==='/login' && Boolean(document.getElementById('identificador'))"), "entrada pelo navegador"); } catch (falha) { throw new Error(falha.message + JSON.stringify(await chrome.avaliar("({path:location.pathname,text:document.body.textContent.slice(0,500)})")) + chrome.diagnostico()); }await captura("acesso-deslogado");
     });

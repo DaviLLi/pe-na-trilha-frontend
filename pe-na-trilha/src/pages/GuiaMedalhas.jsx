@@ -1,3 +1,4 @@
+import GaleriaMedalhas from "../components/GaleriaMedalhas.jsx";
 import Medalha from "../components/Medalha";
 
 import { niveisMedalhas } from "../data/niveisMedalhas.js";
@@ -17,6 +18,7 @@ function GuiaMedalhas() {
           </li>
         ))}
       </ol>
+      <GaleriaMedalhas />
     </main>
   );
 }

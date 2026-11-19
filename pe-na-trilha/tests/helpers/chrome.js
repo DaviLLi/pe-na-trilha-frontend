@@ -69,7 +69,7 @@ export async function abrirChrome(diretorio) {
       fechar,
       diagnostico: () => diagnosticos.join("\n"),
       async pressionarTecla(key) {
-        const codigo = { Escape: 27, ArrowLeft: 37, ArrowRight: 39 }[key];
+        const codigo = { Escape: 27, ArrowLeft: 37, ArrowRight: 39, Home: 36, End: 35 }[key];
         await enviar("Input.dispatchKeyEvent", { type: "keyDown", key, code: key, windowsVirtualKeyCode: codigo }, sessionId);
         await enviar("Input.dispatchKeyEvent", { type: "keyUp", key, code: key, windowsVirtualKeyCode: codigo }, sessionId);
       },
@@ -85,6 +85,9 @@ export async function abrirChrome(diretorio) {
         await enviar("Input.dispatchMouseEvent", { type: "mousePressed", button: "left", clickCount: 1, x, y }, sessionId);
         await enviar("Input.dispatchMouseEvent", { type: "mouseReleased", button: "left", clickCount: 1, x, y }, sessionId);
       },
+      moverMouse: (x, y) => enviar("Input.dispatchMouseEvent", { type: "mouseMoved", x, y }, sessionId),
+      reduzirMovimento: () => enviar("Emulation.setEmulatedMedia",
+        { features: [{ name: "prefers-reduced-motion", value: "reduce" }] }, sessionId),
       capturar: () => enviar("Page.captureScreenshot", { format: "png" }, sessionId),
       viewport: (width, height = 800) => enviar("Emulation.setDeviceMetricsOverride",
         { width, height, deviceScaleFactor: 1, mobile: false }, sessionId),

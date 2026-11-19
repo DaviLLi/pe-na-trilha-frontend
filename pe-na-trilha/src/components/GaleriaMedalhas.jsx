@@ -1,0 +1,185 @@
+import { useEffect, useId, useRef, useState, useSyncExternalStore } from "react";
+import { useAuth } from "../contexts/useAuth.js";
+import { calcularMedalha, niveisMedalhas } from "../data/niveisMedalhas.js";
+import { contarPublicacoesProprias } from "../services/estatisticasPublicacoes.js";
+import { listarMinhasTrilhas } from "../services/trilhasService.js";
+import Medalha from "./Medalha.jsx";
+import "../styles/galeriaMedalhas.css";
+
+const breakpointDesktop = "(min-width: 861px)";
+
+function observarDesktop(atualizar) {
+  const consulta = window.matchMedia(breakpointDesktop);
+  consulta.addEventListener("change", atualizar);
+  return () => consulta.removeEventListener("change", atualizar);
+}
+
+function emDesktop() {
+  return window.matchMedia(breakpointDesktop).matches;
+}
+
+function EstadoMedalha({ estado }) {
+  return (
+    <span className="medalCollectionState" data-state={estado}>
+      {estado === "Bloqueada" ? (
+        <svg aria-hidden="true" width="14" height="14" viewBox="0 0 16 16" fill="none"
+          stroke="currentColor" strokeWidth="1.4" strokeLinecap="round">
+          <rect x="3.5" y="7" width="9" height="6.5" rx="1.5" />
+          <path d="M5.5 7V5a2.5 2.5 0 0 1 5 0v2" />
+        </svg>
+      ) : (
+        <span className="medalCollectionDot" aria-hidden="true" />
+      )}
+      <span className="medalCollectionStateText">{estado}</span>
+    </span>
+  );
+}
+
+function PainelMedalha({ nivel, expandida, estado, selecionar, registrarBotao, navegar }) {
+  const id = useId();
+  const cartao = useRef(null);
+  const quadro = useRef(0);
+
+  useEffect(() => () => cancelAnimationFrame(quadro.current), []);
+
+  function limparBrilho() {
+    cancelAnimationFrame(quadro.current);
+    const estilo = cartao.current?.style;
+    if (!estilo) return;
+    for (const variavel of ["--foil-x", "--foil-y", "--tilt-x", "--tilt-y"]) {
+      estilo.removeProperty(variavel);
+    }
+  }
+
+  function moverBrilho(evento) {
+    if (!expandida || evento.pointerType !== "mouse") return;
+    const { clientX, clientY, currentTarget } = evento;
+    cancelAnimationFrame(quadro.current);
+    quadro.current = requestAnimationFrame(() => {
+      if (!cartao.current || window.matchMedia("(prefers-reduced-motion: reduce)").matches) return;
+      const { left, top, width, height } = currentTarget.getBoundingClientRect();
+      const x = (clientX - left) / width;
+      const y = (clientY - top) / height;
+      const estilo = cartao.current.style;
+      estilo.setProperty("--foil-x", `${x * 100}%`);
+      estilo.setProperty("--foil-y", `${y * 100}%`);
+      estilo.setProperty("--tilt-x", `${(0.5 - y) * 8}deg`);
+      estilo.setProperty("--tilt-y", `${(x - 0.5) * 10}deg`);
+    });
+  }
+
+  return (
+    <li className="medalCollectionPanel" data-medal={nivel.medalha} data-expanded={expandida}
+      data-locked={estado === "Bloqueada"} onPointerLeave={limparBrilho}>
+      <button
+        ref={registrarBotao}
+        id={`${id}-botao`}
+        type="button"
+        className="medalCollectionTab"
+        aria-label={`${nivel.nivel}, ${estado.toLowerCase()}`}
+        aria-expanded={expandida}
+        aria-controls={`${id}-painel`}
+        onFocus={selecionar}
+        onClick={selecionar}
+        onKeyDown={navegar}
+        onPointerEnter={(evento) => { if (evento.pointerType === "mouse") selecionar(); }}
+        onPointerMove={moverBrilho}
+      >
+        {expandida ? null : (
+          <span className="medalCollectionTabContent" aria-hidden="true">
+            <Medalha nivel={nivel.medalha} className="medalCollectionThumb" alt="" />
+            <span>{nivel.nivel}</span>
+            <EstadoMedalha estado={estado} />
+          </span>
+        )}
+      </button>
+      <div className="medalCollectionRegion" id={`${id}-painel`} role="region"
+        aria-labelledby={`${id}-botao`} hidden={!expandida}>
+        {expandida ? (
+          <div className="medalHolo" ref={cartao}>
+            <div className="medalHoloArtwork">
+              <Medalha nivel={nivel.medalha} className="medalHoloImage" />
+            </div>
+            <div className="medalHoloCopy">
+              <EstadoMedalha estado={estado} />
+              <h3>{nivel.nivel}</h3>
+              <strong>{nivel.titulo}</strong>
+              <p>{nivel.faixa}</p>
+            </div>
+          </div>
+        ) : null}
+      </div>
+    </li>
+  );
+}
+
+function ColecaoMedalhas({ usuarioId }) {
+  const id = useId();
+  const botoes = useRef([]);
+  const [escolha, setEscolha] = useState(null);
+  const [situacao, setSituacao] = useState({ conquista: null, carregando: true });
+
+  useEffect(() => {
+    const controller = new AbortController();
+    async function consultar() {
+      try {
+        const publicacoes = await listarMinhasTrilhas({ signal: controller.signal });
+        const estatisticas = contarPublicacoesProprias(publicacoes, usuarioId);
+        if (!controller.signal.aborted) {
+          setSituacao({ conquista: calcularMedalha(estatisticas?.aprovadas), carregando: false });
+        }
+      } catch {
+        if (!controller.signal.aborted) setSituacao({ conquista: null, carregando: false });
+      }
+    }
+    void consultar();
+    return () => controller.abort();
+  }, [usuarioId]);
+
+  const { conquista, carregando } = situacao;
+  const quantidade = niveisMedalhas.indexOf(conquista?.atual) + 1;
+  const ativa = escolha ?? conquista?.atual.medalha ?? niveisMedalhas[0].medalha;
+  const status = carregando ? "Verificando conquistas…" : "Progresso indisponível";
+
+  function moverFoco(evento, indice) {
+    const total = niveisMedalhas.length;
+    const destinos = {
+      ArrowLeft: (indice + total - 1) % total,
+      ArrowRight: (indice + 1) % total,
+      Home: 0,
+      End: total - 1,
+    };
+    if (!Object.hasOwn(destinos, evento.key)) return;
+    evento.preventDefault();
+    botoes.current[destinos[evento.key]]?.focus();
+  }
+
+  return (
+    <section className="medalCollection" aria-labelledby={id}>
+      <header className="medalCollectionHeading">
+        <h2 id={id}>Sua coleção</h2>
+        <p role="status">{conquista ? `${quantidade} de ${niveisMedalhas.length} conquistadas` : status}</p>
+      </header>
+      <ul className="medalCollectionPanels" role="list">
+        {niveisMedalhas.map((nivel, indice) => (
+          <PainelMedalha
+            key={nivel.medalha}
+            nivel={nivel}
+            expandida={ativa === nivel.medalha}
+            estado={conquista ? (indice < quantidade ? "Conquistada" : "Bloqueada") : "Status desconhecido"}
+            selecionar={() => setEscolha(nivel.medalha)}
+            registrarBotao={(botao) => { botoes.current[indice] = botao; }}
+            navegar={(evento) => moverFoco(evento, indice)}
+          />
+        ))}
+      </ul>
+    </section>
+  );
+}
+
+export default function GaleriaMedalhas() {
+  const desktop = useSyncExternalStore(observarDesktop, emDesktop, () => false);
+  const { usuario } = useAuth();
+  if (!desktop || !usuario?._id) return null;
+  return <ColecaoMedalhas key={usuario._id} usuarioId={usuario._id} />;
+}
