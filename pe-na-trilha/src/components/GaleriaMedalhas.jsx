@@ -6,16 +6,16 @@ import { listarMinhasTrilhas } from "../services/trilhasService.js";
 import Medalha from "./Medalha.jsx";
 import "../styles/galeriaMedalhas.css";
 
-const breakpointDesktop = "(min-width: 861px)";
+const consultaDesktop = "(min-width: 861px) and (hover: hover) and (pointer: fine)";
 
 function observarDesktop(atualizar) {
-  const consulta = window.matchMedia(breakpointDesktop);
+  const consulta = window.matchMedia(consultaDesktop);
   consulta.addEventListener("change", atualizar);
   return () => consulta.removeEventListener("change", atualizar);
 }
 
 function emDesktop() {
-  return window.matchMedia(breakpointDesktop).matches;
+  return window.matchMedia(consultaDesktop).matches;
 }
 
 function EstadoMedalha({ estado }) {
@@ -116,30 +116,37 @@ function PainelMedalha({ nivel, expandida, estado, selecionar, registrarBotao, n
 function ColecaoMedalhas({ usuarioId }) {
   const id = useId();
   const botoes = useRef([]);
+  const titulo = useRef(null);
+  const botaoTentarNovamente = useRef(null);
   const [escolha, setEscolha] = useState(null);
-  const [situacao, setSituacao] = useState({ conquista: null, carregando: true });
+  const [tentativa, setTentativa] = useState(0);
+  const [situacao, setSituacao] = useState(null);
 
   useEffect(() => {
     const controller = new AbortController();
     async function consultar() {
-      try {
-        const publicacoes = await listarMinhasTrilhas({ signal: controller.signal });
-        const estatisticas = contarPublicacoesProprias(publicacoes, usuarioId);
-        if (!controller.signal.aborted) {
-          setSituacao({ conquista: calcularMedalha(estatisticas?.aprovadas), carregando: false });
-        }
-      } catch {
-        if (!controller.signal.aborted) setSituacao({ conquista: null, carregando: false });
+      const publicacoes = await listarMinhasTrilhas({ signal: controller.signal }).catch(() => null);
+      if (controller.signal.aborted) return;
+      const estatisticas = contarPublicacoesProprias(publicacoes, usuarioId);
+      const conquista = calcularMedalha(estatisticas?.aprovadas);
+      if (conquista && document.activeElement === botaoTentarNovamente.current) {
+        titulo.current?.focus({ preventScroll: true });
       }
+      setSituacao({ conquista, tentativa });
     }
     void consultar();
     return () => controller.abort();
-  }, [usuarioId]);
+  }, [usuarioId, tentativa]);
 
-  const { conquista, carregando } = situacao;
+  const conquista = situacao?.conquista;
+  const carregando = situacao?.tentativa !== tentativa;
   const quantidade = niveisMedalhas.indexOf(conquista?.atual) + 1;
   const ativa = escolha ?? conquista?.atual.medalha ?? niveisMedalhas[0].medalha;
   const status = carregando ? "Verificando conquistas…" : "Progresso indisponível";
+
+  function tentarNovamente() {
+    if (!carregando) setTentativa(tentativa + 1);
+  }
 
   function moverFoco(evento, indice) {
     const total = niveisMedalhas.length;
@@ -157,8 +164,16 @@ function ColecaoMedalhas({ usuarioId }) {
   return (
     <section className="medalCollection" aria-labelledby={id}>
       <header className="medalCollectionHeading">
-        <h2 id={id}>Sua coleção</h2>
-        <p role="status">{conquista ? `${quantidade} de ${niveisMedalhas.length} conquistadas` : status}</p>
+        <h2 id={id} ref={titulo} tabIndex={-1}>Sua coleção</h2>
+        <div className="medalCollectionProgress">
+          <p role="status">{conquista ? `${quantidade} de ${niveisMedalhas.length} conquistadas` : status}</p>
+          {situacao && !conquista ? (
+            <button className="medalCollectionRetry" ref={botaoTentarNovamente} type="button"
+              aria-disabled={carregando} onClick={tentarNovamente}>
+              Tentar novamente
+            </button>
+          ) : null}
+        </div>
       </header>
       <ul className="medalCollectionPanels" role="list">
         {niveisMedalhas.map((nivel, indice) => (

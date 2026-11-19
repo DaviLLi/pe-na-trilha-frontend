@@ -45,6 +45,10 @@ test("Guia de Medalhas: galeria acessível e exclusiva de desktop", {
   let chrome, servidor;
   let consultas = 0;
   let trilhas = publicacoes(16);
+  let statusConsulta = 200;
+  let aguardarResposta = false;
+  const pendentes = [];
+  const rotasConsultadas = [];
 
   try {
     servidor = await createServer({ root, configFile: false, cacheDir: join(temporario, "vite"), logLevel: "error",
@@ -62,10 +66,18 @@ test("Guia de Medalhas: galeria acessível e exclusiva de desktop", {
             }
             const dados = { "/usuarios/refresh": { usuario }, "/usuarios/csrf": { csrfToken: "sintetico" }, "/trilhas/minhas": trilhas };
             if (!Object.hasOwn(dados, pathname)) return next();
-            if (pathname === "/trilhas/minhas") consultas++;
-            res.setHeader("Cache-Control", "private, no-store");
-            res.setHeader("Content-Type", "application/json");
-            res.end(JSON.stringify(dados[pathname]));
+            rotasConsultadas.push(pathname);
+            const consultaProgresso = pathname === "/trilhas/minhas";
+            if (consultaProgresso) consultas++;
+            const responder = () => {
+              if (res.destroyed) return;
+              res.statusCode = consultaProgresso ? statusConsulta : 200;
+              res.setHeader("Cache-Control", "private, no-store");
+              res.setHeader("Content-Type", "application/json");
+              res.end(JSON.stringify(dados[pathname]));
+            };
+            if (consultaProgresso && aguardarResposta) pendentes.push(responder);
+            else responder();
           });
         },
       }],
@@ -73,7 +85,7 @@ test("Guia de Medalhas: galeria acessível e exclusiva de desktop", {
     await servidor.listen();
     const origem = `http://127.0.0.1:${servidor.httpServer.address().port}`;
     assert.equal((await fetch(origem + "/__medalhas.jsx")).status, 200);
-    chrome = await abrirChrome(join(temporario, "chrome"));
+    chrome = await abrirChrome(join(temporario, "celular"));
     const url = origem + "/medalhas";
     const status = () => chrome.avaliar("document.querySelector('.medalCollectionHeading [role=status]')?.textContent");
     const ativo = () => chrome.avaliar("document.querySelector('.medalCollectionPanel[data-expanded=true]')?.dataset.medal");
@@ -94,16 +106,30 @@ test("Guia de Medalhas: galeria acessível e exclusiva de desktop", {
       };
     })()`);
 
-    await t.test("mantém os cinco cards originais no celular e consulta conquistas só no desktop", async () => {
-      await chrome.viewport(390, 1200);
+    await t.test("mantém os cinco cards originais no celular, inclusive na horizontal acima de 861 px", async () => {
+      await chrome.emularToque(true);
+      await chrome.viewport(390, 844, true);
       await chrome.navegar(url);
       await esperar(() => chrome.avaliar("document.querySelectorAll('.medalLevel').length === 5"), "cards originais");
       assert.equal(await chrome.avaliar("document.querySelector('.medalCollection') === null"), true);
       assert.equal(await semRolagemHorizontal(), true);
+      await chrome.viewport(932, 430, true);
+      await chrome.avaliar("new Promise(resolve => requestAnimationFrame(() => requestAnimationFrame(resolve)))");
+      assert.equal(await chrome.avaliar("matchMedia('(min-width: 861px) and (orientation: landscape) and (hover: none) and (pointer: coarse)').matches"), true);
+      assert.equal(await chrome.avaliar("document.querySelector('.medalCollection') === null"), true);
+      assert.equal(await chrome.avaliar("document.querySelectorAll('.medalLevel').length"), 5);
+      assert.equal(await semRolagemHorizontal(), true);
+      assert.equal(consultas, 0);
+
+      await chrome.fechar();
+      chrome = await abrirChrome(join(temporario, "desktop"), { simularMouse: true });
       await chrome.viewport(860, 1200);
+      await chrome.navegar(url);
+      await esperar(() => chrome.avaliar("document.querySelectorAll('.medalLevel').length === 5"), "cards originais no desktop");
       assert.equal(await chrome.avaliar("document.querySelector('.medalCollection') === null"), true);
       assert.equal(consultas, 0);
       await chrome.viewport(861, 1200);
+      assert.equal(await chrome.avaliar("matchMedia('(hover: hover) and (pointer: fine)').matches"), true);
       await esperar(async () => await status() === "3 de 5 conquistadas", "conquistas para 16 trilhas aprovadas");
       assert.equal(await ativo(), "bronze");
       assert.equal(await semRolagemHorizontal(), true);
@@ -187,9 +213,47 @@ test("Guia de Medalhas: galeria acessível e exclusiva de desktop", {
       }
       assert.equal((await detalhes()).estado, "Status desconhecido");
     });
+
+    await t.test("recupera o progresso após falha HTTP sem repetir sessão ou duplicar a consulta", async () => {
+      const seletor = ".medalCollectionRetry";
+      await chrome.viewport(860, 1000);
+      await esperar(() => chrome.avaliar("document.querySelector('.medalCollection') === null"), "desmontagem da galeria");
+      trilhas = publicacoes(31);
+      statusConsulta = 503;
+      await chrome.viewport(1280, 1000);
+      await esperar(async () => await status() === "Progresso indisponível", "falha HTTP do progresso");
+      assert.equal(await chrome.avaliar(`document.querySelector('${seletor}').textContent.trim()`), "Tentar novamente");
+      const inicio = rotasConsultadas.length;
+
+      aguardarResposta = true;
+      await chrome.avaliar(`document.querySelector('${seletor}').focus()`);
+      await chrome.pressionarTecla("Enter");
+      await esperar(() => pendentes.length === 1, "primeira tentativa pendente");
+      assert.equal(await status(), "Verificando conquistas…");
+      assert.equal(await chrome.avaliar(`document.activeElement.matches('${seletor}[aria-disabled=true]')`), true);
+      await chrome.pressionarTecla("Enter");
+      pendentes.shift()();
+      await esperar(async () => await status() === "Progresso indisponível", "nova falha do progresso");
+      assert.equal(await chrome.avaliar(`document.activeElement.matches('${seletor}[aria-disabled=false]')`), true);
+
+      statusConsulta = 200;
+      await chrome.avaliar(`(() => {
+        const botao = document.querySelector('${seletor}');
+        botao.click();
+        botao.click();
+      })()`);
+      await esperar(() => pendentes.length === 1, "segunda tentativa pendente");
+      pendentes.shift()();
+      await esperar(async () => await status() === "4 de 5 conquistadas", "progresso recuperado");
+      assert.equal(await ativo(), "prata");
+      assert.equal(await chrome.avaliar(`document.querySelector('${seletor}') === null`), true);
+      assert.equal(await chrome.avaliar("document.activeElement.matches('.medalCollectionHeading h2')"), true);
+      assert.deepEqual(rotasConsultadas.slice(inicio), ["/trilhas/minhas", "/trilhas/minhas"]);
+    });
   } finally {
+    pendentes.forEach((responder) => responder());
     await chrome?.fechar();
     await servidor?.close();
-    await rm(temporario, { recursive: true, force: true });
+    await rm(temporario, { recursive: true, force: true, maxRetries: 3 });
   }
 });
