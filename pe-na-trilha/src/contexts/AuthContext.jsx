@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { enviarFotoPerfil } from "../services/fotoPerfilService.js";
 import { criarCacheImagensPublicacoes } from "../services/cacheImagensPublicacoes.js";
+import { criarEnviosPublicacao } from "../services/enviosPublicacao.js";
 import AuthContext from "./authContextValue.js";
 import {
   definirTokenCsrf,
@@ -16,9 +17,9 @@ import {
 } from "../services/authService.js";
 
 export function AuthProvider({ children }) {
-  const [sessao, setSessao] = useState({ usuario: null, cacheImagens: null });
+  const [sessao, setSessao] = useState({ usuario: null, cacheImagens: null, enviosPublicacao: null });
   const sessaoAtual = useRef(sessao);
-  const { usuario, cacheImagens } = sessao;
+  const { usuario, cacheImagens, enviosPublicacao } = sessao;
   const [carregandoSessao, setCarregandoSessao] = useState(true);
   const [erroRestauracao, setErroRestauracao] = useState(false);
 
@@ -28,11 +29,17 @@ export function AuthProvider({ children }) {
     const mesmaConta = proximoUsuario?._id && proximoUsuario._id === anterior.usuario?._id
       && proximoUsuario.perfil === anterior.usuario.perfil;
     const reutilizar = mesmaConta && !novaSessao;
-    if (!reutilizar) anterior.cacheImagens?.encerrar();
+    if (!reutilizar) {
+      anterior.cacheImagens?.encerrar();
+      anterior.enviosPublicacao?.encerrar();
+    }
     const proxima = {
       usuario: proximoUsuario,
       cacheImagens: proximoUsuario?._id
         ? (reutilizar ? anterior.cacheImagens : criarCacheImagensPublicacoes())
+        : null,
+      enviosPublicacao: proximoUsuario?._id
+        ? (reutilizar ? anterior.enviosPublicacao : criarEnviosPublicacao())
         : null,
     };
     sessaoAtual.current = proxima;
@@ -50,6 +57,7 @@ export function AuthProvider({ children }) {
     return () => {
       definirTratadorNaoAutorizado(null);
       sessaoAtual.current.cacheImagens?.encerrar();
+      sessaoAtual.current.enviosPublicacao?.encerrar();
     };
   }, [logoutLocal]);
 
@@ -129,6 +137,7 @@ export function AuthProvider({ children }) {
     () => ({
       usuario,
       cacheImagens,
+      enviosPublicacao,
       autenticado: Boolean(usuario),
       carregandoSessao,
       erroRestauracao,
@@ -139,7 +148,7 @@ export function AuthProvider({ children }) {
       atualizarFotoPerfil,
       tentarRestaurarSessao: carregarSessao,
     }),
-    [usuario, cacheImagens, carregandoSessao, erroRestauracao, login, logout, consultarUsuario, atualizarPerfil, atualizarFotoPerfil, carregarSessao],
+    [usuario, cacheImagens, enviosPublicacao, carregandoSessao, erroRestauracao, login, logout, consultarUsuario, atualizarPerfil, atualizarFotoPerfil, carregarSessao],
   );
 
   return <AuthContext.Provider value={valor}>{children}</AuthContext.Provider>;

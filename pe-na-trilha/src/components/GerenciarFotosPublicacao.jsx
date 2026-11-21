@@ -22,6 +22,7 @@ function SelecionarFoto({ rotulo, desabilitado, aoEnviar }) {
 export default function GerenciarFotosPublicacao({ publicacao, permitido, ocupado, executar, revisao }) {
   const { cacheImagens } = useAuth();
   const fotos = publicacao.fotos || [];
+  const faltam = (publicacao.fotosPrevistas ?? 0) - fotos.length;
   function executarMudanca(foto, operacao, mensagem) {
     executar(async (config) => {
       try {
@@ -34,7 +35,10 @@ export default function GerenciarFotosPublicacao({ publicacao, permitido, ocupad
   }
   return <section className="ownerPhotoManager" aria-label="Gerenciar fotos">
     <h2>Fotos da publicação</h2>
-    {!permitido ? <p>As fotos desta publicação não podem ser alteradas.</p> : <p>Até cinco fotos, JPEG, PNG ou WebP, até 5 MiB cada. A primeira foto é a capa.</p>}
+    {!permitido ? <p>As fotos desta publicação não podem ser alteradas.</p> : <p>
+      {faltam > 0 ? `Adicione mais ${faltam} ${faltam === 1 ? "foto" : "fotos"} para liberar a publicação para análise. ` : ""}
+      Até cinco fotos, JPEG, PNG ou WebP, até 5 MiB cada. A primeira foto é a capa.
+    </p>}
     <div className="profilePostPhotos">{fotos.map((foto) => <div key={`${foto._id}:${revisao}`} className="ownerPhotoItem" data-foto-id={foto._id}>
       {typeof foto.url === "string" && foto.url.startsWith("/trilhas/minhas/") ? <FotoPrivadaPerfil foto={foto} titulo={publicacao.titulo} /> : <p>Foto indisponível</p>}
       {permitido ? <>

@@ -82,6 +82,7 @@ function FilaPendentes() {
   const [carregando, setCarregando] = useState(true);
   const [erro, setErro] = useState("");
   const [aviso, setAviso] = useState("");
+  const decisoes = useRef(new Set());
   useEffect(() => {
     const controller = new AbortController();
     let ativa = true;
@@ -95,10 +96,31 @@ function FilaPendentes() {
         if (ativa && !controller.signal.aborted && !axios.isCancel(falha)) setErro(obterMensagemErro(falha));
       } finally { if (ativa && !controller.signal.aborted) setCarregando(false); }
     }
-    carregar();
-    return () => { ativa = false; controller.abort(); };
+    const consultaInicial = carregar();
+    async function incluirConcluida({ detail: id }) {
+      if (typeof id !== "string") return;
+      await consultaInicial;
+      if (!ativa || decisoes.current.has(id)) return;
+      try {
+        const dados = await listarTrilhasPendentes({ signal: controller.signal });
+        if (!ativa || !Array.isArray(dados) || decisoes.current.has(id)) return;
+        const nova = dados.find((item) => item._id === id);
+        if (nova) {
+          setPublicacoes((atuais) => atuais.some((item) => item._id === id) ? atuais : [...atuais, nova]);
+        }
+      } catch {
+        // A atualização manual da fila continua disponível em caso de falha.
+      }
+    }
+    window.addEventListener("publicacoes:atualizadas", incluirConcluida);
+    return () => {
+      ativa = false;
+      controller.abort();
+      window.removeEventListener("publicacoes:atualizadas", incluirConcluida);
+    };
   }, [versao]);
   function decidida(id, status) {
+    decisoes.current.add(id);
     setPublicacoes((atuais) => atuais.filter((item) => item._id !== id));
     setAviso(status === "approved" ? "Publicação aprovada." : "Publicação rejeitada.");
   }

@@ -9,6 +9,9 @@ test("retorno do login aceita apenas rotas internas conhecidas e respeita admin"
   const usuario = { perfil: "user" };
   assert.deepEqual(destinoAposLogin({ pathname: "/perfil", search: "?aba=fotos", hash: "#publicacoes" }, usuario), { pathname: "/perfil", search: "?aba=fotos", hash: "#publicacoes" });
   assert.equal(destinoAposLogin({ pathname: "/admin" }, usuario), "/trilhas");
+  assert.equal(destinoAposLogin({ pathname: "/admin/administradores" }, usuario), "/trilhas");
+  assert.deepEqual(destinoAposLogin({ pathname: "/admin/administradores" }, { perfil: "admin" }),
+    { pathname: "/admin/administradores", search: "", hash: "" });
   assert.deepEqual(destinoAposLogin({ pathname: "/admin" }, { perfil: "admin" }), { pathname: "/admin", search: "", hash: "" });
   for (const origem of [null, "https://example.invalid", { pathname: "//example.invalid" }, { pathname: "https://example.invalid" }, { pathname: "/login" }, { pathname: "/%2fexample.invalid" }, { pathname: "/perfil", search: "?a=\n" }]) assert.equal(destinoAposLogin(origem, usuario), "/trilhas");
 });

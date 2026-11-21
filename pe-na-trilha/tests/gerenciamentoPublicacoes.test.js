@@ -17,9 +17,10 @@ const entrada = `
 import React from 'react';import {createRoot} from 'react-dom/client';import {MemoryRouter,Routes,Route} from 'react-router-dom';
 import AuthContext from '/src/contexts/authContextValue.js';import api,{definirTokenCsrf} from '/src/services/api.js';
 import ListaTrilhas from '/src/pages/ListaTrilhas.jsx';import CadastroTrilha from '/src/pages/CadastroTrilha.jsx';import Perfil from '/src/pages/Perfil.jsx';import EditarTrilha from '/src/pages/EditarTrilha.jsx';import '/src/styles/product.css';
+import {criarEnviosPublicacao} from '/src/services/enviosPublicacao.js';
 api.defaults.baseURL=location.origin;definirTokenCsrf('csrf-sintetico');
 const root=createRoot(document.getElementById('root'));let seq=0;
-window.abrir=(pagina,usuario)=>root.render(React.createElement(MemoryRouter,{initialEntries:[pagina],key:++seq},React.createElement(AuthContext.Provider,{value:{usuario}},React.createElement(Routes,null,React.createElement(Route,{path:'/trilhas',element:React.createElement(ListaTrilhas)}),React.createElement(Route,{path:'/trilhas/nova',element:React.createElement(CadastroTrilha)}),React.createElement(Route,{path:'/perfil',element:React.createElement(Perfil)}),React.createElement(Route,{path:'/trilhas/:id/editar',element:React.createElement(EditarTrilha)})))));
+window.abrir=(pagina,usuario)=>root.render(React.createElement(MemoryRouter,{initialEntries:[pagina],key:++seq},React.createElement(AuthContext.Provider,{value:{usuario,enviosPublicacao:usuario?criarEnviosPublicacao():null}},React.createElement(Routes,null,React.createElement(Route,{path:'/trilhas',element:React.createElement(ListaTrilhas)}),React.createElement(Route,{path:'/trilhas/nova',element:React.createElement(CadastroTrilha)}),React.createElement(Route,{path:'/perfil',element:React.createElement(Perfil)}),React.createElement(Route,{path:'/trilhas/:id/editar',element:React.createElement(EditarTrilha)})))));
 window.ocultar=()=>root.render(null);window.confirma=true;window.confirm=()=>window.confirma;
 window.urls={criadas:[],revogadas:[]};const criar=URL.createObjectURL.bind(URL),revogar=URL.revokeObjectURL.bind(URL);
 URL.createObjectURL=(blob)=>{const url=criar(blob);window.urls.criadas.push(url);return url;};URL.revokeObjectURL=(url)=>{window.urls.revogadas.push(url);return revogar(url);};

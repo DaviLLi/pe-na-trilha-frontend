@@ -1,0 +1,199 @@
+.adminManagePage {
+  max-width: 1320px;
+}
+
+.adminManageGrid {
+  display: grid;
+  grid-template-columns: minmax(0, 1.65fr) minmax(0, 1fr);
+  gap: 1rem;
+  align-items: start;
+}
+
+.adminManagePanel,
+.adminManageDialog {
+  min-width: 0;
+  padding: clamp(1rem, 2vw, 1.4rem);
+  border: 1px solid var(--product-line);
+  border-radius: var(--product-radius);
+  background: var(--product-panel);
+  color: var(--product-text);
+}
+
+.adminManagePanel h2,
+.adminManageDialog h2 {
+  margin: 0;
+  font: 700 1.05rem/1.35 var(--font-display);
+}
+
+.adminManageSectionHeading,
+.adminManageAccount {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.6rem 0.85rem;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.adminManageList {
+  display: grid;
+  gap: 0.55rem;
+  padding: 0;
+  margin: 0.95rem 0 0;
+  list-style: none;
+}
+
+.adminManageAccount {
+  padding: 0.75rem;
+  border: 1px solid var(--product-line);
+  border-radius: 0.65rem;
+  background: var(--product-panel-raised);
+}
+
+.adminManageAccount[data-principal="true"] {
+  border-color: #31665a;
+  background: #142721;
+}
+
+.adminManageIdentity {
+  flex: 1 1 10rem;
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
+
+.adminManageIdentity h3 {
+  margin: 0;
+  font-size: 0.94rem;
+}
+
+.adminManageIdentity p,
+.adminManageMuted,
+.adminManageDialog p {
+  color: var(--product-muted);
+  font-size: 0.86rem;
+  line-height: 1.5;
+  overflow-wrap: anywhere;
+}
+
+.adminManageIdentity p { margin: 0.2rem 0 0; }
+
+.adminManagePrincipal {
+  padding: 0.35rem 0.55rem;
+  border: 1px solid #367252;
+  border-radius: 0.45rem;
+  color: #aaf1cc;
+  font-size: 0.75rem;
+  font-weight: 700;
+}
+
+.adminManageForm {
+  display: grid;
+  gap: 0.9rem;
+  margin-top: 1rem;
+}
+
+.adminManageForm .formField,
+.adminManageDialog .formField {
+  min-width: 0;
+  margin: 0;
+}
+
+.adminManageForm input,
+.adminManageDialog input {
+  box-sizing: border-box;
+  width: 100%;
+  min-width: 0;
+}
+
+.adminManagePage button,
+.adminManageDialog button,
+.adminManageAccessNotice a {
+  min-height: 44px;
+  padding: 0.55rem 0.75rem;
+  border-radius: 0.55rem;
+  font: 700 0.86rem/1.35 var(--font-body);
+}
+
+.adminManagePage .primaryButton,
+.adminManageDialog button {
+  border: 1px solid var(--product-line);
+}
+
+.adminManagePage .adminManageDanger,
+.adminManageDialog .adminManageDanger {
+  border: 1px solid #85534e;
+  background: #31201e;
+  color: #ffd2cc;
+  cursor: pointer;
+}
+
+.adminManagePage .adminManageDanger:hover:not(:disabled),
+.adminManageDialog .adminManageDanger:hover:not(:disabled) {
+  background: #4a2926;
+}
+
+.adminManagePage button:disabled,
+.adminManageDialog button:disabled {
+  opacity: 0.58;
+  cursor: not-allowed;
+}
+
+.adminManagePage button:focus-visible,
+.adminManageDialog button:focus-visible,
+.adminManageAccessNotice a:focus-visible {
+  outline: 2px solid var(--product-green-hover);
+  outline-offset: 2px;
+}
+
+.adminManageFeedback {
+  margin: 0 0 1rem;
+  padding: 0.7rem 0.85rem;
+  border-radius: 0.55rem;
+}
+
+.adminManagePage .adminManageFeedback {
+  margin-bottom: 1rem;
+}
+
+.adminManageDialog {
+  box-sizing: border-box;
+  width: min(29rem, calc(100% - 2rem));
+  max-height: calc(100% - 2rem);
+  overflow: auto;
+}
+
+.adminManageDialog::backdrop {
+  background: rgb(4 12 9 / 0.72);
+}
+
+.adminManageDialog form { display: grid; gap: 0.8rem; }
+.adminManageDialog p { margin: 0; }
+.adminManageDialog p[role="alert"] { color: #ffd2cc; }
+
+.adminManageActions {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+  gap: 0.5rem;
+}
+
+.adminManageAccessNotice {
+  position: fixed;
+  z-index: 20;
+  right: 1rem;
+  bottom: 1rem;
+  width: min(24rem, calc(100% - 2rem));
+  box-sizing: border-box;
+  padding: 0.9rem;
+  border: 1px solid #8c433c;
+  border-radius: var(--product-radius);
+  background: #321c1a;
+  box-shadow: var(--product-shadow);
+  color: #ffd2cc;
+}
+
+.adminManageAccessNotice p { margin: 0 0 0.65rem; font-size: 0.9rem; overflow-wrap: anywhere; }
+.adminManageAccessNotice a { display: inline-flex; align-items: center; box-sizing: border-box; text-decoration: none; }
+
+@media (max-width: 860px) {
+  .adminManageGrid { grid-template-columns: minmax(0, 1fr); }
+}

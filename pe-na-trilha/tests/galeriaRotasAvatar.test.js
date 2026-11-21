@@ -57,11 +57,21 @@ test("Aplicação real: galeria, avatar persistido e rotas por sessão/papel com
           if (privado && modo.holdDetalhe && req.url.includes("variante=detalhe")) pendentes.push(responder);else responder();return;
         }
         if (path === "/trilhas/minhas") { json(200, db.filter((p) => p.proprietario === usuario._id).map((p) => dto(p, "autor")));return; }
-        if (path === "/trilhas/pendentes") { json(usuario.perfil === "admin" ? 200 : 403, usuario.perfil === "admin" ? db.filter((p) => p.status === "pending").map((p) => dto(p, "admin")) : { mensagem: "Acesso negado." });return; }
+        if (path === "/trilhas/pendentes") { json(usuario.perfil === "admin" ? 200 : 403, usuario.perfil === "admin" ? db.filter((p) => p.status === "pending" && !p.fotosPrevistas).map((p) => dto(p, "admin")) : { mensagem: "Acesso negado." });return; }
         if (path === "/trilhas" && req.method === "GET") { json(200, db.filter((p) => p.status === "approved" && (!new URL(req.url,"http://teste").searchParams.get("busca") || [p.titulo,p.descricao,p.endereco,p.tipoLocal,p.dificuldade,p.condicaoCaminho,p.sinalizacao,p.estacionamento,p.banheiro,p.alimentacao,p.estruturaBanho,p.acesso,p.caracteristicaPrincipal].some(v => typeof v === "string" && v.toLocaleLowerCase("pt-BR").includes(new URL(req.url,"http://teste").searchParams.get("busca").toLocaleLowerCase("pt-BR"))))).map((p) => dto(p, "publico")));return; }
         if (path === "/trilhas" && req.method === "POST") { const data = JSON.parse(body), nova = { ...data, _id: id(proximoPost++), status: "pending", proprietario: usuario._id, fotos: [] };db.push(nova);json(201, dto(nova, "autor"));return; }
         const item = db.find((p) => p._id === path.split("/")[path.startsWith("/trilhas/minhas/") ? 3 : 2]);
-        if (path.endsWith("/fotos") && req.method === "POST" && item) { const foto = { _id: id(9000 + item.fotos.length), updatedAt: "2026-11-13T13:00:00Z" };item.fotos.push(foto);json(201, dto(item, "autor").fotos.at(-1));return; }
+        if (path.endsWith("/fotos") && req.method === "POST" && item) {
+          const responder = () => {
+            if (res.destroyed) return;
+            const foto = { _id: id(9000 + item.fotos.length), updatedAt: "2026-11-13T13:00:00Z" };
+            item.fotos.push(foto);
+            if (item.fotos.length === item.fotosPrevistas) delete item.fotosPrevistas;
+            json(201, dto(item, "autor").fotos.at(-1));
+          };
+          if (modo.holdUpload) pendentes.push(responder); else responder();
+          return;
+        }
         if (path.endsWith("/moderacao") && item) { item.status = JSON.parse(body).status;json(200, dto(item, "admin"));return; }
         if (path.startsWith("/trilhas/minhas/") && item) { json(200, dto(item, "autor"));return; }
         json(404, { mensagem: "Endpoint inesperado no teste." });
@@ -379,6 +389,30 @@ test("Aplicação real: galeria, avatar persistido e rotas por sessão/papel com
     await t.test("publicação recém-criada mostra fotos privadas; aprovação libera Feed sem mudar contrato", async () => {
       await abrir("/trilhas/nova");await esperar(() => chrome.avaliar("Boolean(document.getElementById('titulo'))"), "cadastro");await escrever("titulo", "Nova trilha com fotos");await escrever("descricao", "Descrição da nova trilha");await escrever("endereco", "Local novo");await selecionar("#fotos-publicacao", ["um.png", "dois.png"]);await chrome.avaliar("document.querySelector('.trilhaForm').requestSubmit()");await esperar(async () => (await texto()).includes("2 fotos com envio confirmado"), "uploads concluídos");await clicar("Ver minhas publicações");await esperar(() => chrome.avaliar("document.querySelectorAll('.profilePostPhoto img').length===2"), "fotos no Perfil");await captura("publicacao-criada");await chrome.viewport(390, 1000);await captura("publicacao-criada-mobile");await chrome.viewport(1280, 1000);assert.equal(db[0].status, "pending");
       await abrir("/trilhas");await esperar(async () => (await texto()).includes("Nenhuma trilha cadastrada"), "Feed sem pendente");usuario.perfil = "admin";await abrir("/admin");await esperar(() => chrome.avaliar("Boolean(document.querySelector('.adminPostCard'))"), "moderação");await clicar("Aprovar");await esperar(async () => (await texto()).includes("Publicação aprovada."), "aprovação");await abrir("/trilhas");await esperar(() => chrome.avaliar("Boolean(document.querySelector('.postPhoto img')?.naturalWidth)"), "Feed com fotos aprovadas");assert.match(await texto(), /Nova trilha com fotos/);assert.equal(db[0].status, "approved");
+    });
+    await t.test("continua o envio ao navegar e só mostra a trilha completa na fila do Admin", async () => {
+      usuario.perfil = "admin";
+      modo.holdUpload = true;
+      await chrome.viewport(1440, 1000);
+      await abrir("/trilhas/nova");
+      await esperar(() => chrome.avaliar("Boolean(document.getElementById('titulo'))"), "cadastro");
+      await escrever("titulo", "Trilha com envio em andamento");
+      await escrever("descricao", "Descrição de teste");
+      await escrever("endereco", "Destino sintético");
+      await selecionar("#fotos-publicacao", ["um.png", "dois.png"]);
+      await chrome.avaliar("document.querySelector('.trilhaForm').requestSubmit()");
+      await esperar(() => pendentes.length === 1, "primeiro upload");
+      assert.equal(db[0].fotosPrevistas, 2);
+      await clicar("Ver minhas publicações");
+      await esperar(() => chrome.avaliar("location.pathname === '/perfil' && Boolean(document.querySelector('.profilePostCard'))"), "navegação durante o envio");
+      await chrome.avaliar("document.querySelector('.productNav a[href=\"/admin\"]').click()");
+      await esperar(async () => (await texto()).includes("Nenhuma publicação pendente"), "fila sem envio incompleto");
+      assert.equal(await chrome.avaliar("document.querySelector('.adminPostCard') === null"), true);
+      modo.holdUpload = false;
+      pendentes.shift()();
+      await esperar(() => db[0].fotos.length === 2, "envios concluídos em outra tela");
+      await esperar(() => chrome.avaliar("document.querySelectorAll('.adminPostCard .adminPhoto img').length === 2"), "fotos na fila");
+      assert.equal(await chrome.avaliar("[...document.querySelectorAll('.adminPhoto')].every(foto => foto.getBoundingClientRect().width <= 160)"), true);
     });
     await t.test("avatares das publicações têm tamanho ampliado e preservam contorno e exceções", async () => {
       usuario.fotoPerfil=origem+'/__avatar.png';db=[{...post(1),autor:{...usuario}}];
