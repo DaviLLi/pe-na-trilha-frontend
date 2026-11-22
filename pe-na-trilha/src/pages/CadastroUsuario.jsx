@@ -145,7 +145,7 @@ function CadastroUsuario() {
             <label htmlFor="aceiteTermos">Li e concordo com os Termos de Uso e declaro que tive acesso à Política de Privacidade.</label>
           </div>
           <div className="consentDocuments"><Link to="/termos" target="_blank" rel="noopener noreferrer">Ler Termos de Uso ↗<span className="srOnly"> (abre em nova aba)</span></Link><Link to="/privacidade" target="_blank" rel="noopener noreferrer">Ler Política de Privacidade ↗<span className="srOnly"> (abre em nova aba)</span></Link></div>
-          <p id="ajuda-aceite">O aceite é dos termos. A política explica o uso dos dados e é apresentada para sua ciência. O registro definitivo do aceite ainda aguarda confirmação da integração.</p>
+          <p id="ajuda-aceite">O aceite é dos termos. A política explica o uso dos dados e é apresentada para sua ciência. O servidor registra a data do aceite e as versões apresentadas no cadastro.</p>
           {errosCampos.aceiteTermos ? <p className="fieldError" id="erro-aceiteTermos" role="alert">{errosCampos.aceiteTermos}</p> : null}
         </div>
 

@@ -14,7 +14,10 @@ import GuiaMedalhas from "./pages/GuiaMedalhas";
 import Ajuda from "./pages/Ajuda";
 import DocumentoLegal from "./pages/DocumentoLegal";
 import Admin from "./pages/Admin";
+import GerenciamentoAdministradores, { AvisoGerenciamentoAdministradores } from "./pages/GerenciamentoAdministradores.jsx";
 import { useAuth } from "./contexts/useAuth";
+import { useGerenciamentoAdministradores } from "./contexts/useGerenciamentoAdministradores.js";
+import { rotaGerenciamentoAdmin } from "./services/administradoresService.js";
 import "./styles/style.css";
 import "./styles/community.css";
 
@@ -80,10 +83,15 @@ function RotaProtegida({ children, admin = false }) {
 }
 
 function App() {
-  const { pathname } = useLocation();
+  const { pathname, state } = useLocation();
   const { usuario, autenticado, carregandoSessao, erroRestauracao } = useAuth();
   const usuarioId = usuario?._id;
   const esconderMenu = !autenticado || carregandoSessao || ["/login", "/cadastro", "/termos", "/privacidade"].includes(pathname);
+  const gerenciamento = useGerenciamentoAdministradores(
+    autenticado && !carregandoSessao && !erroRestauracao ? usuario : null,
+    pathname.replace(/\/+$/, "").toLowerCase() === rotaGerenciamentoAdmin,
+  );
+  const avisoGerenciamento = typeof state?.avisoGerenciamento === "string" ? state.avisoGerenciamento : "";
 
   useEffect(() => {
     if (carregandoSessao || erroRestauracao) return;
@@ -93,7 +101,7 @@ function App() {
 
   return (
     <div className={esconderMenu ? "appFrame authFrameOnly" : "appFrame"}>
-      {!esconderMenu ? <Sidebar /> : null}
+      {!esconderMenu ? <Sidebar podeGerenciarAdministradores={gerenciamento.autorizado} /> : null}
 
       <Routes>
         <Route path='/' element={<RotaProtegida><Home /></RotaProtegida>} />
@@ -105,7 +113,13 @@ function App() {
         <Route path='/termos' element={<DocumentoLegal tipo="termos" />} />
         <Route path='/privacidade' element={<DocumentoLegal tipo="privacidade" />} />
         <Route path='/medalhas' element={<RotaProtegida><GuiaMedalhas /></RotaProtegida>} />
-        <Route path='/admin' element={<RotaProtegida admin><Admin /></RotaProtegida>} />
+        <Route path='/admin' element={<RotaProtegida admin>
+          <Admin />
+          {avisoGerenciamento ? <AvisoGerenciamentoAdministradores mensagem={avisoGerenciamento} /> : null}
+        </RotaProtegida>} />
+        <Route path={rotaGerenciamentoAdmin} element={
+          <RotaProtegida admin><GerenciamentoAdministradores key={usuarioId} consulta={gerenciamento} /></RotaProtegida>
+        } />
         <Route
           path='/login'
           element={

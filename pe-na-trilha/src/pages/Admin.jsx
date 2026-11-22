@@ -20,6 +20,7 @@ function PublicacaoPendente({ publicacao, aoDecidir }) {
   const [enviando, setEnviando] = useState(false);
   const [erro, setErro] = useState("");
   const operacao = useRef(null);
+  const [revisaoObsoleta, setRevisaoObsoleta] = useState(false);
   const emAndamento = useRef(false);
   useEffect(() => () => operacao.current?.abort(), []);
   const autor = typeof publicacao.proprietario === "string" ? publicacao.proprietario : publicacao.proprietario?._id;
@@ -28,7 +29,7 @@ function PublicacaoPendente({ publicacao, aoDecidir }) {
   const erroId = `erro-${publicacao._id}`;
 
   async function decidir(status) {
-    if (emAndamento.current) return;
+    if (emAndamento.current || revisaoObsoleta) return;
     if (status === "rejected" && (!motivo.trim() || motivo.length > 2000)) {
       setErro("Informe o motivo da rejeição, com até 2000 caracteres."); return;
     }
@@ -36,7 +37,9 @@ function PublicacaoPendente({ publicacao, aoDecidir }) {
     operacao.current = controller; emAndamento.current = true;
     setEnviando(true); setErro("");
     try {
-      const confirmada = await moderarTrilha(publicacao._id, status === "approved" ? { status } : { status, motivo: motivo.trim() }, { signal: controller.signal });
+      const decisao = { status, revisao: publicacao.revisao };
+      if (status === "rejected") decisao.motivo = motivo.trim();
+      const confirmada = await moderarTrilha(publicacao._id, decisao, { signal: controller.signal });
       if (controller.signal.aborted) return;
       if (confirmada?._id !== publicacao._id || confirmada.status !== status) {
         setErro("A API não confirmou a decisão solicitada. Atualize a fila antes de tentar novamente.");
@@ -44,7 +47,10 @@ function PublicacaoPendente({ publicacao, aoDecidir }) {
       }
       aoDecidir(publicacao._id, status);
     } catch (falha) {
-      if (!controller.signal.aborted && !axios.isCancel(falha)) setErro(obterMensagemErro(falha));
+      if (!controller.signal.aborted && !axios.isCancel(falha)) {
+        if (falha.response?.status === 409) setRevisaoObsoleta(true);
+        setErro(obterMensagemErro(falha));
+      }
     } finally {
       emAndamento.current = false;
       if (!controller.signal.aborted) setEnviando(false);
@@ -68,8 +74,8 @@ function PublicacaoPendente({ publicacao, aoDecidir }) {
       {erro ? <p id={erroId} className="storageAlert" role="alert">{erro}</p> : null}
       </form>
       <div className="adminDecisionButtons">
-        <button className="primaryButton" type="button" disabled={enviando} onClick={() => decidir("approved")}>Aprovar</button>
-        <button className="secondaryButton" type="submit" form={formularioId} disabled={enviando}>Rejeitar</button>
+        <button className="primaryButton" type="button" disabled={enviando || revisaoObsoleta} onClick={() => decidir("approved")}>Aprovar</button>
+        <button className="secondaryButton" type="submit" form={formularioId} disabled={enviando || revisaoObsoleta}>Rejeitar</button>
       </div>
       {enviando ? <p role="status">Enviando decisão...</p> : null}
     </div>
@@ -82,6 +88,7 @@ function FilaPendentes() {
   const [carregando, setCarregando] = useState(true);
   const [erro, setErro] = useState("");
   const [aviso, setAviso] = useState("");
+  const decisoes = useRef(new Set());
   useEffect(() => {
     const controller = new AbortController();
     let ativa = true;
@@ -95,10 +102,31 @@ function FilaPendentes() {
         if (ativa && !controller.signal.aborted && !axios.isCancel(falha)) setErro(obterMensagemErro(falha));
       } finally { if (ativa && !controller.signal.aborted) setCarregando(false); }
     }
-    carregar();
-    return () => { ativa = false; controller.abort(); };
+    const consultaInicial = carregar();
+    async function incluirConcluida({ detail: id }) {
+      if (typeof id !== "string") return;
+      await consultaInicial;
+      if (!ativa || decisoes.current.has(id)) return;
+      try {
+        const dados = await listarTrilhasPendentes({ signal: controller.signal });
+        if (!ativa || !Array.isArray(dados) || decisoes.current.has(id)) return;
+        const nova = dados.find((item) => item._id === id);
+        if (nova) {
+          setPublicacoes((atuais) => atuais.some((item) => item._id === id) ? atuais : [...atuais, nova]);
+        }
+      } catch {
+        // A atualização manual da fila continua disponível em caso de falha.
+      }
+    }
+    window.addEventListener("publicacoes:atualizadas", incluirConcluida);
+    return () => {
+      ativa = false;
+      controller.abort();
+      window.removeEventListener("publicacoes:atualizadas", incluirConcluida);
+    };
   }, [versao]);
   function decidida(id, status) {
+    decisoes.current.add(id);
     setPublicacoes((atuais) => atuais.filter((item) => item._id !== id));
     setAviso(status === "approved" ? "Publicação aprovada." : "Publicação rejeitada.");
   }
@@ -107,7 +135,7 @@ function FilaPendentes() {
     {aviso ? <p className="adminNotice" role="status">{aviso}</p> : null}
     {carregando ? <p role="status">Carregando publicações pendentes...</p> : erro ?
       <p className="storageAlert" role="alert">{erro}</p> : publicacoes.length ?
-        publicacoes.map((item) => <PublicacaoPendente key={item._id} publicacao={item} aoDecidir={decidida} />) :
+        publicacoes.map((item) => <PublicacaoPendente key={item._id + ":" + item.revisao} publicacao={item} aoDecidir={decidida} />) :
         <div className="integrationEmpty moderationEmpty" role="status"><div><h2>Nenhuma publicação pendente.</h2><p>A fila de moderação está vazia.</p></div></div>}
   </section>;
 }

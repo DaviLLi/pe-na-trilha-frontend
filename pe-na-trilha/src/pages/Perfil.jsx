@@ -22,7 +22,9 @@ function Perfil() {
   const carregandoContagens = Boolean(usuarioId) && (!atuais || atuais.carregando);
   const nome = usuario?.nomeCompleto || "Nome não informado";
   const nomeUsuario = usuario?.nomeUsuario;
-  const foto = usuario?.fotoPerfil || usuario?.avatarUrl || usuario?.foto || usuario?.imagemPerfil;
+  const foto = usuario?.fotoPerfil === undefined
+    ? usuario?.avatarUrl || usuario?.foto || usuario?.imagemPerfil
+    : usuario.fotoPerfil;
 
   return (
     <main className="productMain profilePage">

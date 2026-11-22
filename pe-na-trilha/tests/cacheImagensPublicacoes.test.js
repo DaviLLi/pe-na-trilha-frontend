@@ -10,15 +10,18 @@ const outraFoto = foto.replace("000000000000000000000002", "00000000000000000000
 const fotoAdmin = foto.replace("/trilhas/minhas/", "/admin/trilhas/");
 const blob = new Blob(["foto"], { type: "image/webp" });
 const adapter = api.defaults.adapter;
+const origemAnterior = api.defaults.baseURL;
 const caches = new Set();
 
 afterEach(() => {
   for (const cache of caches) cache.encerrar();
   caches.clear();
   api.defaults.adapter = adapter;
+  api.defaults.baseURL = origemAnterior;
 });
 
 function ambiente(t, opcoes = { validar: async () => {} }) {
+  api.defaults.baseURL = "https://api.example.invalid";
   const cache = criarCacheImagensPublicacoes(opcoes);
   caches.add(cache);
   const chamadas = [], criadas = [], revogadas = [];

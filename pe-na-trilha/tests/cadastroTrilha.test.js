@@ -14,9 +14,15 @@ const entrada = `
 import React from 'react'; import {createRoot} from 'react-dom/client'; import {MemoryRouter} from 'react-router-dom';
 import AuthContext from '/src/contexts/authContextValue.js'; import api,{definirTokenCsrf} from '/src/services/api.js';
 import CadastroTrilha from '/src/pages/CadastroTrilha.jsx'; import '/src/styles/product.css';
+import {criarEnviosPublicacao} from '/src/services/enviosPublicacao.js';
 api.defaults.baseURL=location.origin;definirTokenCsrf('csrf-sintetico');
 const root=createRoot(document.getElementById('root'));
-window.montar=(usuario)=>root.render(React.createElement(MemoryRouter,null,React.createElement(AuthContext.Provider,{value:{usuario}},React.createElement(CadastroTrilha))));
+let fila, idAtual;
+window.encerrarEnvio=()=>{fila?.encerrar();fila=null;idAtual=null;};
+window.montar=(usuario)=>{
+  if(usuario?._id!==idAtual){window.encerrarEnvio();idAtual=usuario?._id;fila=usuario?criarEnviosPublicacao():null;}
+  root.render(React.createElement(MemoryRouter,null,React.createElement(AuthContext.Provider,{value:{usuario,enviosPublicacao:fila}},React.createElement(CadastroTrilha))));
+};
 window.ocultar=()=>root.render(null);
 `;
 async function esperar(fn, nome) {
@@ -42,7 +48,8 @@ test("Cadastro: formulário e multipart reais no navegador com API sintética", 
         if (req.url === "/usuarios/refresh") { json(200, {}); return; }
         const upload = req.url.endsWith("/fotos"), index = requests.filter((r) => r.url.endsWith("/fotos")).length;
         const status = upload ? (modo.falhaFoto === index ? 502 : 201) : (modo.status || 201);
-        const responder = () => json(status, status >= 400 ? { mensagem: upload ? "Falha no envio da foto." : "Corrija a localização.", erros: upload ? [] : ["Endereço inválido."] } : upload ? { _id: String(index), url: null } : { _id: id, status: modo.estado || "pending", fotos: [] });
+        const entrada = upload ? null : JSON.parse(body);
+        const responder = () => json(status, status >= 400 ? { mensagem: upload ? "Falha no envio da foto." : "Corrija a localização.", erros: upload ? [] : ["Endereço inválido."] } : upload ? { _id: String(index), url: null } : { _id: id, status: modo.estado || "pending", fotos: [], fotosPrevistas: entrada.fotosPrevistas });
         if ((!upload && modo.hold) || (upload && modo.holdFoto)) pendentes.push(responder); else responder();
       }); },
     }] });
@@ -58,7 +65,7 @@ test("Cadastro: formulário e multipart reais no navegador com API sintética", 
     };
     const selecionar = (n, type = "image/png", tamanho = 10) => chrome.avaliar(`(()=>{const dt=new DataTransfer();for(let i=0;i<${n};i++)dt.items.add(new File([new Uint8Array(${tamanho})],'foto'+i+'.png',{type:${JSON.stringify(type)}}));const el=document.getElementById('fotos-publicacao');el.files=dt.files;el.dispatchEvent(new Event('change',{bubbles:true}));})()`);
     const enviar = () => chrome.avaliar("document.querySelector('form').requestSubmit()");
-    t.afterEach(async () => { await ocultar(); pendentes.splice(0).forEach((fn) => fn()); requests.length = 0; modo = {}; });
+    t.afterEach(async () => { await ocultar(); await chrome.avaliar("encerrarEnvio()"); pendentes.splice(0).forEach((fn) => fn()); requests.length = 0; modo = {}; });
     await t.test("cria pending sem fotos com dez respostas e duração, sem campos internos", async () => {
       await montar(); await preencher();
       await chrome.avaliar("(()=>{for(const field of ['tipoLocal','dificuldade','condicaoCaminho','sinalizacao','estacionamento','banheiro','alimentacao','estruturaBanho','acesso'])document.getElementById('resposta-'+field+'-0').click();})()");
@@ -77,6 +84,7 @@ test("Cadastro: formulário e multipart reais no navegador com API sintética", 
       await esperar(() => pendentes.length === 1, "cadastro pendente"); assert.equal(requests.length, 1);
       pendentes.shift()(); await esperar(async () => (await texto()).includes("5 fotos com envio confirmado"), "cinco fotos");
       assert.equal(requests.length, 6);
+      assert.equal(JSON.parse(requests[0].body).fotosPrevistas, 5);
       for (let i = 0; i < 5; i++) {
         const req = requests[i + 1]; assert.equal(req.url, `/trilhas/${id}/fotos`); assert.equal(req.method, "POST");
         assert.match(req.headers["content-type"], /^multipart\/form-data; boundary=/); assert.equal(req.headers["x-csrf-token"], "csrf-sintetico"); assert.match(req.headers.cookie, /synthetic=1/);
@@ -110,10 +118,22 @@ test("Cadastro: formulário e multipart reais no navegador com API sintética", 
         assert.equal(requests.length, antes + 1); assert.equal(await chrome.avaliar("document.querySelector('form')===null"), true); await ocultar();
       }
     });
-    await t.test("desmontagem durante criação não inicia fotos após resposta tardia", async () => {
+    await t.test("navegar antes da resposta do cadastro mantém toda a sequência de fotos", async () => {
       modo.hold = true; await montar(); await preencher(); await selecionar(2); await enviar(); await esperar(() => pendentes.length === 1, "POST retido");
-      await ocultar(); pendentes.shift()(); await chrome.avaliar("new Promise(r=>setTimeout(r,100))");
-      assert.equal(requests.length, 1); assert.equal(await chrome.avaliar("document.querySelector('main')===null"), true);
+      await ocultar(); pendentes.shift()();
+      await esperar(() => requests.length === 3, "continuação de todos os envios");
+      assert.equal(await chrome.avaliar("document.querySelector('main')===null"), true);
+    });
+    await t.test("sair durante o primeiro upload não cancela a fila e voltar mostra o progresso", async () => {
+      modo.holdFoto = true; await montar(); await preencher(); await selecionar(2); await enviar(); await esperar(() => pendentes.length === 1, "foto retida");
+      await ocultar(); pendentes.shift()();
+      await esperar(() => pendentes.length === 1 && requests.length === 3, "segunda foto iniciada em outra tela");
+      await montar();
+      await esperar(async () => (await texto()).includes("1 / 2"), "progresso conservado");
+      assert.match(await texto(), /Aguardando o envio das fotos/);
+      pendentes.shift()();
+      await esperar(async () => (await texto()).includes("2 fotos com envio confirmado"), "fim do envio");
+      assert.match(await texto(), /Aguardando aprovação administrativa/);
     });
     await t.test("logout durante upload cancela sequência e remove dados do formulário", async () => {
       modo.holdFoto = true; await montar(); await preencher(); await selecionar(3); await enviar(); await esperar(() => pendentes.length === 1, "foto retida");

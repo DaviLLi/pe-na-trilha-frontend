@@ -39,13 +39,17 @@ export async function listarTrilhasPendentes(config = {}) {
 export async function moderarTrilha(id, decisao, config = {}) {
   if (typeof id !== "string" || !/^[a-f0-9]{24}$/i.test(id)) throw new Error("ID de publicação inválido.");
   if (!decisao || typeof decisao !== "object" || Array.isArray(decisao)
-    || Object.keys(decisao).some((campo) => !["status", "motivo"].includes(campo))
+    || Object.keys(decisao).some((campo) => !["status", "motivo", "revisao"].includes(campo))
     || !["approved", "rejected"].includes(decisao.status)
     || (decisao.status === "approved" && decisao.motivo !== undefined)
     || (decisao.status === "rejected" && (typeof decisao.motivo !== "string" || !decisao.motivo.trim() || decisao.motivo.length > 2000))) {
     throw new Error("Decisão inválida; rejeição exige motivo de até 2000 caracteres.");
   }
-  const dados = decisao.status === "approved" ? { status: "approved" } : { status: "rejected", motivo: decisao.motivo.trim() };
+  if (typeof decisao.revisao !== "string" || !decisao.revisao) {
+    throw new Error("Atualize a fila para consultar a revisão da publicação.");
+  }
+  const dados = { status: decisao.status, revisao: decisao.revisao };
+  if (decisao.status === "rejected") dados.motivo = decisao.motivo.trim();
   const resposta = await api.post(`/trilhas/${id}/moderacao`, dados, config);
   return resposta.data;
 }

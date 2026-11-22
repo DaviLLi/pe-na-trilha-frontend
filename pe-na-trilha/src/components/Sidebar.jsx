@@ -1,6 +1,8 @@
 import { useState } from "react";
 import { NavLink, useNavigate } from "react-router-dom";
 import { useAuth } from "../contexts/useAuth";
+import { rotaGerenciamentoAdmin } from "../services/administradoresService.js";
+import { erroCsrf, obterMensagemErro } from "../services/api.js";
 import logo from "../assets/logo.png";
 
 const links = [
@@ -17,6 +19,7 @@ const iconPaths = {
   plus: <><path d="M12 4v16M4 12h16" /></>,
   medal: <><circle cx="12" cy="9" r="5" /><path d="m8.5 13-1 8 4.5-2.5 4.5 2.5-1-8" /></>,
   help: <><circle cx="12" cy="12" r="9" /><path d="M9.7 9a2.4 2.4 0 1 1 4.1 1.7c-1 .9-1.8 1.2-1.8 2.8M12 17h.01" /></>,
+  team: <><circle cx="9" cy="8" r="3" /><path d="M3.5 20v-1a5.5 5.5 0 0 1 11 0v1m1-15a3 3 0 0 1 0 6m2 3a5 5 0 0 1 3 5v1" /></>,
   logout: <><path d="M10 4H5.5a1 1 0 0 0-1 1v14a1 1 0 0 0 1 1H10" /><path d="M13 8l4 4-4 4M17 12H8" /></>,
 };
 
@@ -24,7 +27,7 @@ function NavIcon({ name }) {
   return <svg className="navIcon" viewBox="0 0 24 24" aria-hidden="true">{iconPaths[name]}</svg>;
 }
 
-function Sidebar() {
+function Sidebar({ podeGerenciarAdministradores = false }) {
   const { usuario, logout } = useAuth();
   const navigate = useNavigate();
   const [erroLogout, setErroLogout] = useState("");
@@ -34,8 +37,8 @@ function Sidebar() {
     try {
       await logout();
       navigate("/login", { replace: true });
-    } catch {
-      setErroLogout("Não foi possível encerrar a sessão. Tente novamente.");
+    } catch (erro) {
+      setErroLogout(erroCsrf(erro) ? obterMensagemErro(erro) : "Não foi possível encerrar a sessão. Tente novamente.");
     }
   };
 
@@ -58,8 +61,14 @@ function Sidebar() {
           </NavLink>
         ))}
         {usuario?.perfil === "admin" ? (
-          <NavLink to="/admin" title="Administração" aria-label="Administração" className={({ isActive }) => isActive ? "productNavLink active" : "productNavLink"}>
+          <NavLink to="/admin" end title="Administração" aria-label="Administração" className={({ isActive }) => isActive ? "productNavLink active" : "productNavLink"}>
             <NavIcon name="medal" /><span className="productNavLabel">Administração</span><span className="productNavShortLabel">Admin</span>
+          </NavLink>
+        ) : null}
+        {usuario.perfil === "admin" && podeGerenciarAdministradores ? (
+          <NavLink to={rotaGerenciamentoAdmin} title="Gerenciamento de administradores" aria-label="Gerenciamento de administradores"
+            className={({ isActive }) => isActive ? "productNavLink active" : "productNavLink"}>
+            <NavIcon name="team" /><span className="productNavLabel">Administradores</span><span className="productNavShortLabel">Equipe</span>
           </NavLink>
         ) : null}
         {usuario ? (

@@ -655,7 +655,7 @@ body:has(.authPage) { background: radial-gradient(ellipse at 14% 24%, rgba(44, 1
 .adminPostCard h2 { margin: 0 0 .6rem; color: var(--product-text); font: 600 1.2075rem var(--font-display); overflow-wrap: anywhere; }
 .adminPostCard > p { color: var(--product-muted); font-size: 0.92rem; line-height: 1.5; overflow-wrap: anywhere; }
 .adminPostAddress, .adminPostAuthor { font-size: 0.8395rem; }
-.adminPhotos { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 8rem), 1fr)); gap: .5rem; margin: .8rem 0; }
+.adminPhotos { display: grid; grid-template-columns: repeat(auto-fill, minmax(min(100%, 8rem), 1fr)); max-width: 60rem; gap: .5rem; margin: .8rem 0; }
 .adminPhoto { position: relative; min-width: 0; aspect-ratio: 4 / 3; margin: 0; overflow: hidden; border-radius: .65rem; background: #101815; }
 .adminPhoto img { display: block; width: 100%; height: 100%; object-fit: cover; }
 .adminPhoto[aria-busy="true"] img { opacity: 0; }
