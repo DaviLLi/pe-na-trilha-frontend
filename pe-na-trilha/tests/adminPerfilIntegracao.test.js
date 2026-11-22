@@ -11,7 +11,8 @@ const root = fileURLToPath(new URL("../", import.meta.url));
 const id = (n) => n.toString(16).padStart(24, "0");
 const owner = { _id: id(99), perfil: "user", nomeCompleto: "Pessoa da trilha" };
 const admin = { _id: id(88), perfil: "admin" };
-const post = (n, status = "pending") => ({ _id: id(n), status, titulo: `Publicação ${n}`, descricao: "Descrição sintética", endereco: "Local sintético", proprietario: owner._id, fotos: [] });
+const revisao = (n) => "legacy:" + n;
+const post = (n, status = "pending") => ({ _id: id(n), revisao: revisao(n), status, titulo: `Publicação ${n}`, descricao: "Descrição sintética", endereco: "Local sintético", proprietario: owner._id, fotos: [] });
 const entrada = `
 import React from 'react';import {createRoot} from 'react-dom/client';import {MemoryRouter,Routes,Route} from 'react-router-dom';
 import AuthContext from '/src/contexts/authContextValue.js';import api,{definirTokenCsrf} from '/src/services/api.js';import {listarTrilhas} from '/src/services/trilhasService.js';
@@ -77,7 +78,7 @@ test("Admin e Perfil: clique real, contrato de aprovação e estatísticas da li
         db = [post(width)];await chrome.viewport(width, 1000);await abrir("/admin", admin);await esperar(() => chrome.avaliar("document.querySelectorAll('.adminPostCard').length===1"), "fila");
         assert.equal(await chrome.avaliar("document.querySelector('.adminRejectionForm textarea').value"), "");await ponteiro("Aprovar");
         await esperar(async () => (await texto()).includes("Publicação aprovada."), "confirmação");assert.equal(await chrome.avaliar("document.querySelectorAll('.adminPostCard').length"), 0);
-        const request = requests.filter((r) => r.method === "POST").at(-1);assert.equal(request.url, `/trilhas/${id(width)}/moderacao`);assert.deepEqual(JSON.parse(request.body), { status: "approved" });assert.equal(request.headers["x-csrf-token"], "csrf-sintetico");assert.match(request.headers.cookie, /synthetic=1/);
+        const request = requests.filter((r) => r.method === "POST").at(-1);assert.equal(request.url, `/trilhas/${id(width)}/moderacao`);assert.deepEqual(JSON.parse(request.body), { status: "approved", revisao: revisao(width) });assert.equal(request.headers["x-csrf-token"], "csrf-sintetico");assert.match(request.headers.cookie, /synthetic=1/);
         const feed = await chrome.avaliar("consultarFeed()");assert.equal(feed[0]._id, id(width));assert.equal(feed[0].status, "approved");
       }
       await abrir("/perfil");await esperarContagens(1, 1);assert.match(await texto(), /Verde/);assert.match(await texto(), /1 trilha aprovada/);
@@ -85,7 +86,7 @@ test("Admin e Perfil: clique real, contrato de aprovação e estatísticas da li
     await t.test("rejeição continua exigindo motivo e mantém contrato separado da aprovação", async () => {
       db = [post(1)];await abrir("/admin", admin);await esperar(() => chrome.avaliar("Boolean(document.querySelector('.adminPostCard'))"), "fila");
       await ponteiro("Rejeitar");assert.equal(requests.filter((r) => r.method === "POST").length, 0);
-      await chrome.avaliar("(()=>{const el=document.querySelector('.adminDecision textarea');Object.getOwnPropertyDescriptor(HTMLTextAreaElement.prototype,'value').set.call(el,'  Corrigir localização.  ');el.dispatchEvent(new Event('input',{bubbles:true}));})()");await ponteiro("Rejeitar");await esperar(async () => (await texto()).includes("Publicação rejeitada."), "rejeição");assert.deepEqual(JSON.parse(requests.find((r) => r.method === "POST").body), { status: "rejected", motivo: "Corrigir localização." });
+      await chrome.avaliar("(()=>{const el=document.querySelector('.adminDecision textarea');Object.getOwnPropertyDescriptor(HTMLTextAreaElement.prototype,'value').set.call(el,'  Corrigir localização.  ');el.dispatchEvent(new Event('input',{bubbles:true}));})()");await ponteiro("Rejeitar");await esperar(async () => (await texto()).includes("Publicação rejeitada."), "rejeição");assert.deepEqual(JSON.parse(requests.find((r) => r.method === "POST").body), { status: "rejected", motivo: "Corrigir localização.", revisao: revisao(1) });
     });
     await t.test("erro e resposta sem decisão confirmada não removem publicação nem anunciam sucesso", async () => {
       db = [post(1)];modo.falhaDecisao = 403;await abrir("/admin", admin);await esperar(() => chrome.avaliar("Boolean(document.querySelector('.adminPostCard'))"), "fila");await ponteiro("Aprovar");await esperar(async () => (await texto()).includes("Decisão não autorizada"), "erro HTTP");

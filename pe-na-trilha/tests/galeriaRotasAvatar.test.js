@@ -12,7 +12,7 @@ import { abrirChrome, chromeDisponivel } from "./helpers/chrome.js";
 const root = fileURLToPath(new URL("../", import.meta.url));
 const id = (n) => n.toString(16).padStart(24, "0");
 const pessoa = { _id: id(99), perfil: "user", nomeCompleto: "Pessoa da Trilha", nomeUsuario: "pessoa", email: "pessoa@example.invalid", fotoPerfil: null };
-const post = (n, status = "approved", nFotos = 2) => ({ _id: id(n), proprietario: pessoa._id, titulo: `Trilha ${n}`, descricao: "Percurso entre árvores e mirantes. Informações da comunidade.", endereco: "Local sintético", status, fotos: Array.from({ length: nFotos }, (_, i) => ({ _id: id(n * 10 + i), updatedAt: "2026-11-13T12:00:00Z", width: 320, height: 180 })) });
+const post = (n, status = "approved", nFotos = 2) => ({ _id: id(n), revisao: "legacy:" + n, proprietario: pessoa._id, titulo: `Trilha ${n}`, descricao: "Percurso entre árvores e mirantes. Informações da comunidade.", endereco: "Local sintético", status, fotos: Array.from({ length: nFotos }, (_, i) => ({ _id: id(n * 10 + i), updatedAt: "2026-11-13T12:00:00Z", width: 320, height: 180 })) });
 const entrada = `
 import React from 'react';import {createRoot} from 'react-dom/client';import {BrowserRouter} from 'react-router-dom';
 import {AuthProvider} from '/src/contexts/AuthContext.jsx';import api from '/src/services/api.js';import App from '/src/App.jsx';
@@ -59,7 +59,7 @@ test("Aplicação real: galeria, avatar persistido e rotas por sessão/papel com
         if (path === "/trilhas/minhas") { json(200, db.filter((p) => p.proprietario === usuario._id).map((p) => dto(p, "autor")));return; }
         if (path === "/trilhas/pendentes") { json(usuario.perfil === "admin" ? 200 : 403, usuario.perfil === "admin" ? db.filter((p) => p.status === "pending" && !p.fotosPrevistas).map((p) => dto(p, "admin")) : { mensagem: "Acesso negado." });return; }
         if (path === "/trilhas" && req.method === "GET") { json(200, db.filter((p) => p.status === "approved" && (!new URL(req.url,"http://teste").searchParams.get("busca") || [p.titulo,p.descricao,p.endereco,p.tipoLocal,p.dificuldade,p.condicaoCaminho,p.sinalizacao,p.estacionamento,p.banheiro,p.alimentacao,p.estruturaBanho,p.acesso,p.caracteristicaPrincipal].some(v => typeof v === "string" && v.toLocaleLowerCase("pt-BR").includes(new URL(req.url,"http://teste").searchParams.get("busca").toLocaleLowerCase("pt-BR"))))).map((p) => dto(p, "publico")));return; }
-        if (path === "/trilhas" && req.method === "POST") { const data = JSON.parse(body), nova = { ...data, _id: id(proximoPost++), status: "pending", proprietario: usuario._id, fotos: [] };db.push(nova);json(201, dto(nova, "autor"));return; }
+        if (path === "/trilhas" && req.method === "POST") { const data = JSON.parse(body), nova = { ...data, _id: id(proximoPost), revisao: "legacy:" + proximoPost++, status: "pending", proprietario: usuario._id, fotos: [] };db.push(nova);json(201, dto(nova, "autor"));return; }
         const item = db.find((p) => p._id === path.split("/")[path.startsWith("/trilhas/minhas/") ? 3 : 2]);
         if (path.endsWith("/fotos") && req.method === "POST" && item) {
           const responder = () => {
@@ -72,7 +72,7 @@ test("Aplicação real: galeria, avatar persistido e rotas por sessão/papel com
           if (modo.holdUpload) pendentes.push(responder); else responder();
           return;
         }
-        if (path.endsWith("/moderacao") && item) { item.status = JSON.parse(body).status;json(200, dto(item, "admin"));return; }
+        if (path.endsWith("/moderacao") && item) { const decisao = JSON.parse(body);assert.equal(decisao.revisao, item.revisao);item.status = decisao.status;json(200, dto(item, "admin"));return; }
         if (path.startsWith("/trilhas/minhas/") && item) { json(200, dto(item, "autor"));return; }
         json(404, { mensagem: "Endpoint inesperado no teste." });
       }); },

@@ -82,7 +82,8 @@ test("Gerenciamento de administradores no navegador com API sintética", {
             if (pathname.endsWith("/moderacao")) {
               let corpo = "";
               for await (const dado of req) corpo += dado.toString();
-              const { status } = JSON.parse(corpo);
+              const { status, revisao } = JSON.parse(corpo);
+              assert.equal(revisao, fila[0].revisao);
               decisoes++;
               responderJson(res, 200, { ...fila[0], status });
               fila = [];
@@ -193,7 +194,7 @@ test("Gerenciamento de administradores no navegador com API sintética", {
 
     await t.test("administrador comum recebe acesso negado e ainda pode aprovar na moderação", async () => {
       autenticado = usuario(comum);
-      fila = [{ _id: promovida._id, proprietario: promovida._id, status: "pending",
+      fila = [{ _id: promovida._id, proprietario: promovida._id, status: "pending", revisao: "legacy:1",
         titulo: "Trilha sintética", descricao: "Publicação para moderação.", endereco: "Destino de teste", fotos: [] }];
       await abrir();
       await esperar(async () => await pathname() === "/admin" && await visivel(".adminPostCard"), "retorno à moderação");

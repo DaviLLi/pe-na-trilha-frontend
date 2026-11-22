@@ -13,7 +13,8 @@ const id = (n) => n.toString(16).padStart(24, "0");
 const admin = { _id: id(99), perfil: "admin" };
 const autor = id(88);
 const caminhoFoto = (n, f) => `/admin/trilhas/${id(n)}/fotos/${id(f)}/conteudo`;
-const post = (n, fotos = []) => ({ _id: id(n), titulo: `Publicação ${n}`, descricao: "Descrição para revisão.", endereco: "Endereço sintético", proprietario: autor, status: "pending", fotos });
+const revisao = (n) => "legacy:" + n;
+const post = (n, fotos = []) => ({ _id: id(n), revisao: revisao(n), titulo: `Publicação ${n}`, descricao: "Descrição para revisão.", endereco: "Endereço sintético", proprietario: autor, status: "pending", fotos });
 const foto = (n, f) => ({ _id: id(f), url: caminhoFoto(n, f) });
 const entrada = `
   import React from 'react';
@@ -151,7 +152,7 @@ test("Admin: fila e decisões reais no navegador com backend sintético", {
       assert.equal(await chrome.avaliar(`document.querySelectorAll('[data-publicacao-id="${id(3)}"] button:disabled').length`), 2);
       assert.equal(await chrome.avaliar(`document.querySelector('[data-publicacao-id="${id(3)}"] textarea').disabled`), true);
       const posts = requests.slice(antes).filter((r) => r.method === "POST"); assert.equal(posts.length, 1);
-      assert.deepEqual(posts[0].body, { status: "approved" }); assert.equal(posts[0].csrf, "csrf-sintetico"); await cards(2);
+      assert.deepEqual(posts[0].body, { status: "approved", revisao: revisao(3) }); assert.equal(posts[0].csrf, "csrf-sintetico"); await cards(2);
       pendentesDecisao.shift()(); await cards(1); assert.match(await texto(), /Publicação aprovada/); assert.match(await texto(), /Publicação 4/);
       assert.equal((await urls()).revogadas.filter((u) => u === objectUrl).length, 1);
       assert.equal(requests.slice(antes).filter((r) => r.url === "/trilhas/pendentes").length, 1);
@@ -165,16 +166,29 @@ test("Admin: fila e decisões reais no navegador com backend sintético", {
       await escrever(5, "  Corrigir endereço.  "); await clicar(5, "Rejeitar");
       await esperar(async () => (await texto()).includes("Nenhuma publicação pendente"), "fila atualizada");
       const req = requests.slice(antes).find((r) => r.method === "POST");
-      assert.equal(req.url, `/trilhas/${id(5)}/moderacao`); assert.deepEqual(req.body, { status: "rejected", motivo: "Corrigir endereço." });
+      assert.equal(req.url, `/trilhas/${id(5)}/moderacao`); assert.deepEqual(req.body, { status: "rejected", motivo: "Corrigir endereço.", revisao: revisao(5) });
       assert.match(await texto(), /Publicação rejeitada/);
     });
-    await t.test("erros 403, 409 e 500 mantêm item, motivo e controles utilizáveis", async () => {
+    await t.test("erros mantêm item e motivo; conflito exige uma nova revisão", async () => {
       for (const status of [403, 409, 500]) {
         fila = { dados: [post(status)] }; modoDecisoes.set(id(status), { status, mensagem: `Falha administrativa ${status}.` });
         await montar(); await cards(1); await escrever(status, "Corrigir percurso."); await clicar(status, "Rejeitar");
         await esperar(async () => (await texto()).includes(`Falha administrativa ${status}.`), "erro de decisão"); await cards(1);
         assert.equal(await chrome.avaliar(`document.getElementById('motivo-${id(status)}').value`), "Corrigir percurso.");
-        assert.equal(await chrome.avaliar("document.querySelectorAll('.adminDecision button:disabled').length"), 0);
+        assert.equal(await chrome.avaliar("document.querySelectorAll('.adminDecision button:disabled').length"), status === 409 ? 2 : 0);
+        if (status === 409) {
+          const tentativas = requests.filter((r) => r.method === "POST").length;
+          await clicar(status, "Aprovar");
+          assert.equal(requests.filter((r) => r.method === "POST").length, tentativas);
+          const novaRevisao = revisao(status + 1);
+          fila.dados[0].revisao = novaRevisao;
+          modoDecisoes.delete(id(status));
+          await chrome.avaliar("document.querySelector('.adminRefreshButton').click()");
+          await esperar(() => chrome.avaliar("document.querySelector('.adminDecision button')?.disabled === false"), "fila com revisão atualizada");
+          await clicar(status, "Aprovar");
+          await cards(0);
+          assert.deepEqual(requests.filter((r) => r.method === "POST").at(-1).body, { status: "approved", revisao: novaRevisao });
+        }
         await ocultar();
       }
     });
