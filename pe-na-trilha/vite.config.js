@@ -9,7 +9,7 @@ const origensDistribuicao = {
   homologation: 'PNT_API_ORIGIN_HOMOLOGATION',
 }
 
-function lerOrigem(ambiente, nome, distribuicao) {
+function lerOrigem(ambiente, nome, distribuicao, permiteHttpLocal = false) {
   const valor = ambiente[nome]?.trim()
   if (!valor) throw new Error(`Configure ${nome} para este modo.`)
 
@@ -18,7 +18,8 @@ function lerOrigem(ambiente, nome, distribuicao) {
   if (!/^https?:\/\/[^/?#]+\/?$/i.test(valor) || url.username || url.password || url.pathname !== '/') {
     throw new Error(`${nome} deve conter somente a origem da API, sem credenciais, caminho, query ou fragmento.`)
   }
-  if (distribuicao) {
+  const httpLocal = permiteHttpLocal && /^http:\/\/(?:localhost|127\.0\.0\.1)(?::\d+)?\/?$/i.test(valor)
+  if (distribuicao && !httpLocal) {
     const host = url.hostname.replace(/\.$/, '')
     if (url.protocol !== 'https:' || !host.includes('.') || isIP(host)
       || /(?:^|\.)(localhost|localdomain|local|internal|lan|home|test)$|\.home\.arpa$/.test(host)) {
@@ -34,10 +35,11 @@ export function validarApi(env, command, mode) {
     throw new Error('Modo inválido. Use production ou homologation para builds de distribuição.')
   }
 
-  const api = lerOrigem(env, 'VITE_API_URL', distribuicao)
+  const permiteHttpLocal = mode === 'homologation'
+  const api = lerOrigem(env, 'VITE_API_URL', distribuicao, permiteHttpLocal)
   if (distribuicao) {
     const producao = lerOrigem(env, origensDistribuicao.production, true)
-    const homologacao = lerOrigem(env, origensDistribuicao.homologation, true)
+    const homologacao = lerOrigem(env, origensDistribuicao.homologation, true, permiteHttpLocal)
     if (producao.hostname.replace(/\.$/, '') === homologacao.hostname.replace(/\.$/, '')) {
       throw new Error('Produção e homologação devem usar domínios de API distintos.')
     }

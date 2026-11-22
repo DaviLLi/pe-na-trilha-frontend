@@ -106,7 +106,7 @@ Crie um arquivo `.env` dentro da pasta `pe-na-trilha`:
 VITE_API_URL=http://localhost:3000
 ```
 
-`VITE_API_URL` é obrigatória também no desenvolvimento. O exemplo acima aponta para a API local. Para os builds de produção e homologação, configure as origens HTTPS de cada ambiente conforme o [guia de CI/CD](docs/ci-cd.md#modos-do-frontend).
+`VITE_API_URL` é obrigatória também no desenvolvimento. O exemplo acima aponta para a API local. Para produção, homologação na nuvem ou homologação com uma API local, use as origens e os comandos do [guia de CI/CD](docs/ci-cd.md#modos-do-frontend).
 
 ### Backend
 
