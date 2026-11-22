@@ -2,11 +2,22 @@ import assert from "node:assert/strict";
 import { afterEach, test } from "node:test";
 import api from "../src/services/api.js";
 import { concluirCadastro } from "../src/services/cadastroFlow.js";
-import { VERSAO_TERMOS, VERSAO_PRIVACIDADE } from "../src/data/documentosLegais.js";
+import { documentosLegais, VERSAO_TERMOS, VERSAO_PRIVACIDADE } from "../src/data/documentosLegais.js";
 
 const anterior = api.defaults.adapter;
 afterEach(() => { api.defaults.adapter = anterior; });
 const campos = { nomeCompleto: " Ana Silva ", nomeUsuario: "Ana", email: "ana@example.com", senha: "Trilha123!", aceiteTermos: true };
+
+test("documentos mantêm as versões da API e descrevem os fluxos disponíveis", () => {
+  assert.equal(documentosLegais.termos.versao, "2026-11-12.1");
+  assert.equal(documentosLegais.privacidade.versao, "2026-11-12.1");
+  const termos = Object.fromEntries(documentosLegais.termos.secoes);
+  const politica = Object.fromEntries(documentosLegais.privacidade.secoes);
+  assert.match(termos["Cadastro e conta"], /remover a foto de perfil/);
+  assert.match(termos["Moderação e aprovação"], /reenviá-la para análise/);
+  assert.match(politica["Responsável e canal de contato"], /PREENCHER ANTES DA PUBLICAÇÃO OFICIAL/);
+  assert.match(politica["Como solicitar informações"], /exclusão da conta depende/);
+});
 
 test("bloqueia cadastro sem aceite antes da API e do redirecionamento", async () => {
   let chamadas = 0;

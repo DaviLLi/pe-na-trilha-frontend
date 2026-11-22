@@ -111,6 +111,10 @@ export async function abrirChrome(diretorio, { simularMouse = false } = {}) {
     const { sessionId } = await enviarInicializacao("Target.attachToTarget", { targetId: aba.targetId, flatten: true });
     await enviarInicializacao("Page.enable", {}, sessionId);
     await enviarInicializacao("Runtime.enable", {}, sessionId);
+    await enviarInicializacao("Fetch.enable", { patterns: [{ urlPattern: "http://*" }, { urlPattern: "https://*" }] }, sessionId);
+    await enviarInicializacao("Network.enable", {}, sessionId);
+    // Faça cada navegação da suíte buscar os módulos do servidor Vite da fixture.
+    await enviarInicializacao("Network.setCacheDisabled", { cacheDisabled: true }, sessionId);
     return {
       fechar,
       diagnostico: () => diagnosticos.join("\n"),
@@ -141,7 +145,6 @@ export async function abrirChrome(diretorio, { simularMouse = false } = {}) {
         { width, height, deviceScaleFactor: 1, mobile }, sessionId),
       async navegar(url) {
         origemPermitida = new URL(url).origin;
-        await enviar("Fetch.enable", { patterns: [{ urlPattern: "http://*" }, { urlPattern: "https://*" }] }, sessionId);
         const resultado = await enviar("Page.navigate", { url }, sessionId);
         if (resultado.errorText) throw new Error(resultado.errorText);
         return resultado;

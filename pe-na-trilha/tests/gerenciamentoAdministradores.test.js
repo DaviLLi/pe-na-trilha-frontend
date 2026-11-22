@@ -41,7 +41,7 @@ test("Gerenciamento de administradores no navegador com API sintética", {
 }, async (t) => {
   const temporario = await mkdtemp(join(tmpdir(), "pnt-admin-manage-"));
   const consultas = [], envios = [], pendentesGet = [], pendentesPost = [];
-  let servidor, chrome, autenticado, lista, fila, modoGet, modoPost, decisoes, principalAtivo;
+  let servidor, chrome, autenticado, lista, fila, modoGet, modoPost, decisoes, principalAtivo, csrfAtual;
 
   function responderJson(resposta, status, corpo) {
     if (resposta.destroyed) return;
@@ -72,7 +72,11 @@ test("Gerenciamento de administradores no navegador com API sintética", {
               return;
             }
             if (pathname === "/usuarios/csrf") {
-              responderJson(res, 200, { csrfToken: csrf });
+              responderJson(res, 200, { csrfToken: csrfAtual });
+              return;
+            }
+            if (pathname === "/usuarios/me") {
+              responderJson(res, autenticado ? 200 : 401, autenticado || { mensagem: "Sessão encerrada." });
               return;
             }
             if (pathname === "/trilhas" || pathname === "/trilhas/pendentes") {
@@ -172,6 +176,7 @@ test("Gerenciamento de administradores no navegador com API sintética", {
       modoPost = {};
       decisoes = 0;
       principalAtivo = true;
+      csrfAtual = csrf;
       consultas.length = 0;
       envios.length = 0;
     });
@@ -314,17 +319,49 @@ test("Gerenciamento de administradores no navegador com API sintética", {
       assert.equal(await visivel(dialogo), true);
     });
 
-    await t.test("HTTP 403 fecha o gerenciamento e explica a falha sem apagar a sessão", async () => {
+    await t.test("senha incorreta mantém o diálogo aberto e permite nova confirmação", async () => {
       await abrirPrincipal();
       await abrirRemocao();
       modoPost = { status: 403, mensagem: "Não foi possível confirmar sua identidade." };
       await enviarSenha();
-      await esperar(async () => await pathname() === "/admin" && await visivel(".adminManageAccessNotice"), "saída do gerenciamento em 403");
-      assert.match(await texto(), /Confira sua senha antes de tentar novamente/);
-      assert.equal(await visivel(".adminManagePage"), false);
+      await esperar(() => contem("Confira sua senha antes de tentar novamente"), "erro no diálogo");
+      assert.equal(await pathname(), rota);
+      assert.equal(await visivel(dialogo), true);
+      assert.equal(await senhaVazia(), true);
+      assert.equal(await chrome.avaliar("document.activeElement.id"), "admin-manage-password");
+      modoPost = {};
+      await enviarSenha();
+      await esperar(() => contem("Administrador removido com sucesso."), "nova confirmação aceita");
+      assert.equal(envios.length, 2);
+    });
+
+    await t.test("403 de CSRF renova o token e pede nova confirmação no diálogo", async () => {
+      await abrirPrincipal();
+      await abrirRemocao();
+      csrfAtual = "csrf-recuperado";
+      modoPost = { status: 403, mensagem: "Token CSRF ausente ou inválido." };
+      await enviarSenha();
+      await esperar(() => contem("A verificação de segurança foi renovada"), "recuperação de CSRF");
+      assert.equal(await pathname(), rota);
+      assert.equal(await visivel(dialogo), true);
+      assert.equal(envios.length, 1);
+      assert.equal(envios[0].csrf, csrf);
+      modoPost = {};
+      await enviarSenha();
+      await esperar(() => contem("Administrador removido com sucesso."), "confirmação com CSRF novo");
+      assert.deepEqual(envios.map((envio) => envio.csrf), [csrf, "csrf-recuperado"]);
+    });
+
+    await t.test("perda de autorização fecha o gerenciamento e mantém a sessão", async () => {
+      await abrirPrincipal();
+      await abrirRemocao();
+      modoPost = { status: 403, mensagem: "Acesso exclusivo do administrador principal." };
+      principalAtivo = false;
+      await enviarSenha();
+      await esperar(async () => await pathname() === "/admin" && await visivel(".adminManageAccessNotice"), "saída do gerenciamento");
       assert.equal(await visivel(dialogo), false);
       assert.equal(await visivel(".adminPage"), true);
-      assert.equal(await visivel("#admin-manage-password"), false);
+      assert.match(await texto(), /acesso ao gerenciamento.*não está disponível/);
     });
 
     await t.test("encerra o formulário quando o refresh da sessão retorna 401", async () => {

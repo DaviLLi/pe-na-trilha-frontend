@@ -1,6 +1,6 @@
 import assert from "node:assert/strict";
 import { afterEach, test } from "node:test";
-import api, { definirTokenCsrf, definirTratadorNaoAutorizado } from "../src/services/api.js";
+import api, { definirTokenCsrf, definirTratadorCsrf, definirTratadorNaoAutorizado, obterMensagemErro } from "../src/services/api.js";
 import {
   buscarUsuarioAutenticado,
   cadastrarUsuario,
@@ -15,6 +15,7 @@ const adaptadorAnterior = api.defaults.adapter;
 afterEach(() => {
   api.defaults.adapter = adaptadorAnterior;
   definirTokenCsrf(null);
+  definirTratadorCsrf(null);
   definirTratadorNaoAutorizado(null);
 });
 
@@ -211,4 +212,67 @@ test("um 401 após a repetição não inicia outro ciclo de refresh", async () =
   await assert.rejects(buscarUsuarioAutenticado(), /Não autorizado/);
   assert.equal(chamadasRefresh, 1);
   assert.equal(chamadasConsulta, 2);
+});
+
+function erroHttp(config, status, mensagem) {
+  const erro = new Error(mensagem);
+  erro.config = config;
+  erro.response = { status, data: { mensagem }, config };
+  return erro;
+}
+
+test("refresh concorrente usa a sessão já renovada e repete a consulta uma vez", async () => {
+  const urls = [];
+  api.defaults.adapter = async (config) => {
+    urls.push(config.url);
+    if (urls.length === 1) throw erroHttp(config, 401, "Access expirado");
+    if (config.url === "/usuarios/refresh") throw erroHttp(config, 409, "Refresh concorrente");
+    return { config, data: { _id: "u1" }, status: 200, headers: {} };
+  };
+  let logout = false;
+  definirTratadorNaoAutorizado(() => { logout = true; });
+  assert.deepEqual((await api.get("/trilhas/minhas")).data, { _id: "u1" });
+  assert.deepEqual(urls, ["/trilhas/minhas", "/usuarios/refresh", "/usuarios/me", "/trilhas/minhas"]);
+  assert.equal(logout, false);
+});
+
+test("403 de CSRF compartilha a recuperação e deixa o próximo envio para o usuário", async () => {
+  const tokens = [];
+  let recuperacoes = 0;
+  definirTokenCsrf("antigo");
+  definirTratadorCsrf(async () => {
+    recuperacoes += 1;
+    await new Promise((resolver) => setTimeout(resolver, 5));
+    definirTokenCsrf("novo");
+    return true;
+  });
+  api.defaults.adapter = async (config) => {
+    const csrf = config.headers.get("X-CSRF-Token");
+    tokens.push(csrf);
+    if (csrf === "antigo") throw erroHttp(config, 403, "Token CSRF ausente ou inválido.");
+    return { config, status: 204, headers: {} };
+  };
+
+  const falhas = await Promise.allSettled([api.patch("/usuarios/me", {}), api.delete("/usuarios/me/foto-perfil")]);
+  for (const { status, reason } of falhas) {
+    assert.equal(status, "rejected");
+    assert.match(obterMensagemErro(reason), /foi renovada.*envie novamente/);
+  }
+  assert.equal(recuperacoes, 1);
+  assert.deepEqual(tokens, ["antigo", "antigo"]);
+  await api.patch("/usuarios/me", {});
+  assert.deepEqual(tokens, ["antigo", "antigo", "novo"]);
+});
+
+test("falha ao recuperar CSRF é explícita e 403 de permissão não tenta recuperar", async () => {
+  let recuperacoes = 0;
+  definirTratadorCsrf(() => { recuperacoes += 1; throw new Error("API indisponível"); });
+  api.defaults.adapter = async (config) => {
+    const mensagem = config.url === "/admin/administradores/remover" ? "Acesso exclusivo do administrador principal." : "Token CSRF ausente ou inválido.";
+    throw erroHttp(config, 403, mensagem);
+  };
+  await assert.rejects(api.post("/admin/administradores/remover", {}), /Acesso exclusivo/);
+  assert.equal(recuperacoes, 0);
+  await assert.rejects(api.delete("/usuarios/me/foto-perfil"), (erro) => /Recarregue a página/.test(obterMensagemErro(erro)));
+  assert.equal(recuperacoes, 1);
 });

@@ -43,11 +43,23 @@ test("Aplicação real: galeria, avatar persistido e rotas por sessão/papel com
         let body = "";for await (const chunk of req) body += chunk.toString();const registro = { url: req.url, method: req.method, body, headers: req.headers };requests.push(registro);
         const json = (status, data) => { if (res.destroyed) return;res.statusCode = status;res.setHeader("Content-Type", "application/json");res.end(status === 204 ? undefined : JSON.stringify(data)); };
         if (path === "/usuarios/refresh") { json(logado ? 200 : 401, logado ? { usuario } : { mensagem: "Sessão encerrada." });return; }
-        if (path === "/usuarios/login") { logado = true;json(200, { usuario });return; }
+        if (path === "/usuarios/login") {
+          if (modo.limiteLogin) {
+            res.setHeader("Retry-After", "3");
+            json(429, { mensagem: "Muitas tentativas de login. Tente novamente mais tarde." });
+            return;
+          }
+          logado = true;json(200, { usuario });return;
+        }
         if (path === "/usuarios/csrf") { json(logado ? 200 : 401, { csrfToken: "csrf-sintetico" });return; }
         if (path === "/usuarios/logout") { logado = false;json(204);return; }
         if (path === "/usuarios/me") { json(200, usuario);return; }
         if (path === "/usuarios/me/foto-perfil") {
+          if (req.method === "DELETE") {
+            if (modo.falhaRemocaoAvatar) { json(502, { mensagem: "Remoção do avatar indisponível." });return; }
+            usuario.fotoPerfil = null;
+            json(200, { fotoPerfil: null });return;
+          }
           const responder = () => { if (res.destroyed) return;if (modo.falhaAvatar) { json(502, { mensagem: "Upload do avatar indisponível." });return; }usuario.fotoPerfil = origem + "/__avatar.png?v=" + (++versaoAvatar);json(200, { fotoPerfil: usuario.fotoPerfil }); };
           if (modo.holdAvatar) pendentes.push(responder);else responder();return;
         }
@@ -82,6 +94,17 @@ test("Aplicação real: galeria, avatar persistido e rotas por sessão/papel com
     const pixels = await chrome.avaliar("(()=>{const c=document.createElement('canvas');c.width=320;c.height=180;const x=c.getContext('2d');x.fillStyle='#164c38';x.fillRect(0,0,320,180);x.fillStyle='#73d5b1';x.fillRect(30,30,100,60);window.png=c.toDataURL('image/png').split(',')[1];return {webp:c.toDataURL('image/webp').split(',')[1],png:window.png};})()");pixel = Buffer.from(pixels.webp, "base64");png = Buffer.from(pixels.png, "base64");
     detalhePixel = Buffer.from(await chrome.avaliar("(()=>{const c=document.createElement('canvas');c.width=1280;c.height=720;const x=c.getContext('2d');x.fillStyle='#164c38';x.fillRect(0,0,1280,720);x.fillStyle='#73d5b1';x.fillRect(120,120,400,240);for(let i=0;i<1280;i+=20){x.fillStyle=i%40?'#315d48':'#204e3a';x.fillRect(i,650,10,70);}return c.toDataURL('image/webp',.95).split(',')[1];})()"), "base64");
     const texto = () => chrome.avaliar("document.body.textContent");
+    async function navegar(pagina) {
+      const documentoAnterior = await chrome.avaliar("performance.timeOrigin");
+      await chrome.navegar(origem + pagina);
+      try {
+        await esperar(() => chrome.avaliar(`performance.timeOrigin !== ${documentoAnterior} && typeof abrir === 'function'`), `novo documento em ${pagina}`);
+      } catch (erro) {
+        const estado = await chrome.avaliar(`({ caminho: location.pathname, estado: document.readyState,
+          html: document.body?.textContent.slice(0, 240), scripts: [...document.scripts].map(({src}) => src) })`);
+        throw new Error(`${erro.message}\n${JSON.stringify(estado)}\n${chrome.diagnostico()}`, { cause: erro });
+      }
+    }
     const abrir = async (pagina) => { await chrome.avaliar(`abrir(${JSON.stringify(pagina)})`);await esperar(() => chrome.avaliar("Boolean(document.querySelector('main')) && !document.querySelector('.sessionLoading')"), "sessão carregada"); };
     const clicar = (rotulo, seletor = "body") => chrome.avaliar(`(()=>{const el=[...document.querySelector(${JSON.stringify(seletor)}).querySelectorAll('button,a')].find(el=>el.textContent.trim()===${JSON.stringify(rotulo)});if(!el)throw new Error('Controle ausente: '+${JSON.stringify(rotulo)});el.click();})()`);
     const escrever = (campo, valor) => chrome.avaliar(`(()=>{const el=document.getElementById(${JSON.stringify(campo)});Object.getOwnPropertyDescriptor(el.tagName==='TEXTAREA'?HTMLTextAreaElement.prototype:HTMLInputElement.prototype,'value').set.call(el,${JSON.stringify(valor)});el.dispatchEvent(new Event('input',{bubbles:true}));})()`);
@@ -181,23 +204,23 @@ test("Aplicação real: galeria, avatar persistido e rotas por sessão/papel com
       }
       await irPeloMenu("/trilhas");
       assert.equal(await carregarCenario(), primeiro);
-      await chrome.navegar(origem + "/trilhas");
+      await navegar("/trilhas");
       assert.equal(await carregarCenario(), primeiro);
 
       await clicar("Sair", ".productNav");
       await esperar(() => chrome.avaliar("Boolean(document.getElementById('identificador'))"), "logout");
       assert.equal(await semCenario(), true);
-      await chrome.navegar(origem + "/cadastro");
-      await esperar(() => chrome.avaliar("Boolean(document.querySelector('.authForm'))"), "cadastro de usuário");
+      await navegar("/cadastro");
+      await esperar(() => chrome.avaliar("Boolean(document.getElementById('nomeCompleto'))"), "cadastro de usuário");
       assert.equal(await semCenario(), true);
-      await chrome.navegar(origem + "/login");
+      await navegar("/login");
       await esperar(() => chrome.avaliar("Boolean(document.getElementById('identificador'))"), "login");
       await login();
       const segundo = await carregarCenario();
       assert.notEqual(segundo, primeiro);
 
       await chrome.avaliar("sessionStorage.clear()");
-      await chrome.navegar(origem + "/trilhas");
+      await navegar("/trilhas");
       assert.notEqual(await carregarCenario(), segundo, "entrada em uma nova sessão de navegador com cookie válido");
 
       const catalogo = await chrome.avaliar(`(async () => {
@@ -251,7 +274,13 @@ test("Aplicação real: galeria, avatar persistido e rotas por sessão/papel com
       for (const largura of [320,375,390,430,768,1024,1280]) {
         await chrome.viewport(largura, 1000);
         for (const [nome, pagina, pronto] of [["feed","/trilhas",".post"],["perfil","/perfil",".profilePostCard"],["nova","/trilhas/nova",".trilhaForm"],["edicao",`/trilhas/${id(2)}/editar`,".trilhaForm"],["admin","/admin",".adminDecisionButtons"]]) {
-          await abrir(pagina);await esperar(() => chrome.avaliar(`Boolean(document.querySelector('${pronto}'))`), nome);
+          await abrir(pagina);
+          try {
+            await esperar(() => chrome.avaliar(`Boolean(document.querySelector('${pronto}'))`), `${nome} em ${largura} px`);
+          } catch (erro) {
+            const ultimas = requests.slice(-6).map(({ method, url }) => `${method} ${url}`);
+            throw new Error(`${erro.message}\n${(await texto()).slice(0, 500)}\n${ultimas.join("\n")}\n${chrome.diagnostico()}`, { cause: erro });
+          }
           if (nome === "perfil") await esperar(() => chrome.avaliar("Boolean(document.querySelector('.profileMedalValue'))"),"medalha");
           const medir = async (tela) => {
             await chrome.avaliar("document.fonts.ready");
@@ -319,12 +348,31 @@ test("Aplicação real: galeria, avatar persistido e rotas por sessão/papel com
       }
       assert.deepEqual(requests.filter((r) => r.url.startsWith("/trilhas")).map((r) => r.url), []);
       for (const path of ["/cadastro", "/termos", "/privacidade"]) { await abrir(path);assert.equal(await chrome.avaliar("location.pathname"), path); }
-      await chrome.navegar(origem + "/perfil");try { await esperar(() => chrome.avaliar("location.pathname==='/login' && Boolean(document.getElementById('identificador'))"), "entrada pelo navegador"); } catch (falha) { throw new Error(falha.message + JSON.stringify(await chrome.avaliar("({path:location.pathname,text:document.body.textContent.slice(0,500)})")) + chrome.diagnostico()); }await captura("acesso-deslogado");
+      await navegar("/perfil");try { await esperar(() => chrome.avaliar("location.pathname==='/login' && Boolean(document.getElementById('identificador'))"), "entrada pelo navegador"); } catch (falha) { throw new Error(falha.message + JSON.stringify(await chrome.avaliar("({path:location.pathname,text:document.body.textContent.slice(0,500)})")) + chrome.diagnostico()); }await captura("acesso-deslogado");
     });
     await t.test("login retorna à página solicitada; usuário comum não acessa administração e admin acessa", async () => {
       logado = false;await abrir("/perfil");await esperar(() => chrome.avaliar("Boolean(document.getElementById('identificador'))"), "login");await login();await esperar(() => chrome.avaliar("location.pathname==='/perfil' && Boolean(document.getElementById('profile-name'))"), "retorno ao Perfil");
       await abrir("/admin");await esperar(() => chrome.avaliar("location.pathname==='/trilhas'"), "admin bloqueado");assert.equal(requests.some((r) => r.url === "/trilhas/pendentes"), false);assert.equal(await chrome.avaliar("document.querySelector('[aria-label=Administração]')===null"), true);for (const largura of [1280, 390]) { await chrome.viewport(largura, 1000);await captura(`usuario-comum-${largura}`); }
       usuario.perfil = "admin";await abrir("/admin");await esperar(async () => (await texto()).includes("Nenhuma publicação pendente"), "admin autorizado");assert.equal(await chrome.avaliar("Boolean(document.querySelector('[aria-label=Administração]'))"), true);for (const largura of [1280, 390]) { await chrome.viewport(largura, 1000);await captura(`administrador-${largura}`); }
+    });
+    await t.test("login respeita Retry-After, inclusive ao reabrir a tela", async () => {
+      logado = false;
+      modo.limiteLogin = true;
+      await abrir("/login");
+      await login();
+      const bloqueado = () => chrome.avaliar("Boolean(document.querySelector('.authForm [type=submit]:disabled') && document.querySelector('[role=timer]'))");
+      await esperar(bloqueado, "contador de login");
+      assert.match(await texto(), /Você pode tentar novamente em [123] s/);
+      await abrir("/login");
+      assert.equal(await bloqueado(), true);
+      await login();
+      const enviosLogin = () => requests.filter((req) => req.url === "/usuarios/login").length;
+      assert.equal(enviosLogin(), 1);
+      modo.limiteLogin = false;
+      await esperar(async () => !(await bloqueado()), "fim do bloqueio");
+      await login();
+      await esperar(() => chrome.avaliar("location.pathname === '/trilhas'"), "login após o bloqueio");
+      assert.equal(enviosLogin(), 2);
     });
     await t.test("Feed navega dentro do cartão e abre ampliação somente ao clicar", async () => {
       db = [post(1, "approved", 3)];await chrome.viewport(1280, 1000);await abrir("/trilhas");await esperar(() => chrome.avaliar("Boolean(document.querySelector('.postPhoto img')?.naturalWidth)"), "Feed");
@@ -432,11 +480,40 @@ test("Aplicação real: galeria, avatar persistido e rotas por sessão/papel com
       await chrome.viewport(1280, 1000);await abrir("/perfil");await clicar("Editar perfil");await selecionar('#editar-foto-perfil input[type=file]', ["avatar.png"]);await esperar(() => chrome.avaliar("Boolean(document.querySelector('#editar-foto-perfil .avatarCropCanvas')?.width)"), "prévia");
       modo.holdAvatar = true;await clicar("Salvar foto");await esperar(() => pendentes.length === 1, "upload retido");assert.match(await texto(), /Enviando foto/);const upload = requests.find((r) => r.url === "/usuarios/me/foto-perfil");assert.equal(upload.method, "PUT");assert.match(upload.headers["content-type"], /^multipart\/form-data; boundary=/);assert.match(upload.body, /name="imagem"/);assert.equal(upload.headers["x-csrf-token"], "csrf-sintetico");
       pendentes.shift()();await esperar(async () => (await texto()).includes("Foto de perfil atualizada."), "confirmação");await esperar(() => chrome.avaliar("Boolean(document.querySelector('.profileAvatar img')?.naturalWidth && document.querySelector('.sidebarAccount img')?.naturalWidth)"), "avatar atualizado");const url = usuario.fotoPerfil;await captura("avatar-atualizado");await chrome.viewport(390, 1000);assert.equal(await chrome.avaliar("document.documentElement.scrollWidth>innerWidth"), false);await captura("avatar-atualizado-mobile");await chrome.viewport(1280, 1000);
-      await clicar("Sair", ".productNav");await esperar(() => chrome.avaliar("Boolean(document.getElementById('identificador'))"), "logout");await login();await esperar(() => chrome.avaliar(`Boolean(document.querySelector('.sidebarAccount img')) && document.querySelector('.sidebarAccount img').src===${JSON.stringify(url)}`), "avatar após login novo");await abrir("/perfil");await esperar(() => chrome.avaliar(`document.querySelector('.profileAvatar img')?.src===${JSON.stringify(url)}`), "persistência via sessão");await chrome.navegar(origem + "/perfil");await esperar(() => chrome.avaliar(`document.querySelector('.profileAvatar img')?.src===${JSON.stringify(url)}`), "persistência ao recarregar");
+      await clicar("Sair", ".productNav");await esperar(() => chrome.avaliar("Boolean(document.getElementById('identificador'))"), "logout");await login();await esperar(() => chrome.avaliar(`Boolean(document.querySelector('.sidebarAccount img')) && document.querySelector('.sidebarAccount img').src===${JSON.stringify(url)}`), "avatar após login novo");await abrir("/perfil");await esperar(() => chrome.avaliar(`document.querySelector('.profileAvatar img')?.src===${JSON.stringify(url)}`), "persistência via sessão");await navegar("/perfil");await esperar(() => chrome.avaliar(`document.querySelector('.profileAvatar img')?.src===${JSON.stringify(url)}`), "persistência ao recarregar");
     });
     await t.test("avatar inválido ou falha remota não anuncia sucesso nem altera foto salva", async () => {
       await abrir("/perfil");await clicar("Editar perfil");for (const [tipo, tamanho] of [["image/svg+xml", 10], ["image/png", 5242881]]) { await selecionar('#editar-foto-perfil input[type=file]', ["invalida"], tipo, tamanho);assert.equal(requests.some((r) => r.url === "/usuarios/me/foto-perfil"), false); }
       await selecionar('#editar-foto-perfil input[type=file]', ["valida.png"]);await esperar(()=>chrome.avaliar("Boolean(document.querySelector('#editar-foto-perfil button[type=submit]:not(:disabled)'))"),"foto pronta para salvar");modo.falhaAvatar = true;await clicar("Salvar foto");await esperar(async () => (await texto()).includes("Upload do avatar indisponível."), "erro upload");assert.equal(usuario.fotoPerfil, null);assert.doesNotMatch(await texto(), /Foto de perfil atualizada\./);
+    });
+    await t.test("remoção do avatar exige confirmação e preserva a foto em caso de erro", async () => {
+      usuario.fotoPerfil = origem + "/__avatar.png";
+      await abrir("/perfil");
+      await clicar("Editar perfil");
+      const remover = (confirmado) => chrome.avaliar(`(() => {
+        const confirmacao = window.confirm;
+        window.confirm = () => ${confirmado};
+        try {
+          [...document.querySelectorAll('#editar-foto-perfil button')].find(b => b.textContent === 'Remover foto de perfil').click();
+        } finally { window.confirm = confirmacao; }
+      })()`);
+      const avatarVisivel = () => chrome.avaliar("Boolean(document.querySelector('.profileAvatar img') && document.querySelector('.sidebarAccount img'))");
+      const remocoes = () => requests.filter((req) => req.url === "/usuarios/me/foto-perfil" && req.method === "DELETE");
+      await remover(false);
+      assert.equal(remocoes().length, 0);
+      modo.falhaRemocaoAvatar = true;
+      await remover(true);
+      await esperar(async () => (await texto()).includes("Remoção do avatar indisponível."), "falha da remoção");
+      assert.equal(await avatarVisivel(), true);
+      assert.doesNotMatch(await texto(), /Foto de perfil removida\./);
+      modo.falhaRemocaoAvatar = false;
+      await remover(true);
+      await esperar(async () => (await texto()).includes("Foto de perfil removida."), "confirmação da remoção");
+      assert.equal(await avatarVisivel(), false);
+      assert.deepEqual(remocoes().map((req) => req.headers["x-csrf-token"]), ["csrf-sintetico", "csrf-sintetico"]);
+      await abrir("/perfil");
+      assert.equal(usuario.fotoPerfil, null);
+      assert.equal(await avatarVisivel(), false);
     });
     await t.test("avatar fica dentro de Editar perfil, ajusta zoom e arraste e envia recorte circular real sem ampliar pixels", async () => {
       await chrome.viewport(1280,1000);await abrir("/perfil");assert.equal(await chrome.avaliar("[...document.querySelectorAll('.profileIdentity button')].some(b=>b.textContent==='Alterar foto')"),false);

@@ -1,4 +1,4 @@
-import api from "./api.js";
+import api, { erroCsrf, obterMensagemErro } from "./api.js";
 
 export const rotaGerenciamentoAdmin = "/admin/administradores";
 
@@ -21,6 +21,14 @@ export async function alterarAdministrador(acao, { email, senha }, config) {
   if (status !== 204) throw new Error("A API não confirmou a alteração.");
 }
 
+export function perdeuAcessoGerenciamento(falha) {
+  const { status, data } = falha?.response ?? {};
+  return status === 401 || (status === 403 && [
+    "Acesso exclusivo do administrador principal.",
+    "Use a sessão por cookie para acessar esta operação.",
+  ].includes(data?.mensagem));
+}
+
 export function mensagemGerenciamentoAdmin(falha, alteracao = false) {
   const { status, data } = falha?.response ?? {};
   switch (status) {
@@ -29,9 +37,8 @@ export function mensagemGerenciamentoAdmin(falha, alteracao = false) {
       if (data?.mensagem === "Não foi possível confirmar sua identidade.") {
         return "Não foi possível confirmar sua identidade. Confira sua senha antes de tentar novamente.";
       }
-      if (data?.mensagem === "Token CSRF ausente ou inválido.") {
-        return "A verificação de segurança expirou. Recarregue a página antes de tentar novamente.";
-      }
+      if (erroCsrf(falha)) return obterMensagemErro(falha);
+      if (data?.mensagem === "A conta do administrador principal está protegida.") return data.mensagem;
       return "Seu acesso ao gerenciamento de administradores não está disponível.";
     case 404:
       return alteracao ? "A conta informada não foi encontrada." : "O gerenciamento de administradores está indisponível na API.";

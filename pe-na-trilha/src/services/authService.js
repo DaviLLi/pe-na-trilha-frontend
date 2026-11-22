@@ -26,8 +26,8 @@ export async function logoutUsuario() {
   await api.post("/usuarios/logout");
 }
 
-export async function buscarUsuarioAutenticado() {
-  const resposta = await api.get("/usuarios/me");
+export async function buscarUsuarioAutenticado(config) {
+  const resposta = await api.get("/usuarios/me", config);
   return resposta.data;
 }
 

@@ -1,3 +1,5 @@
 .agents/
 .codex
 skills-lock.json
+.env.production
+.env.homologation

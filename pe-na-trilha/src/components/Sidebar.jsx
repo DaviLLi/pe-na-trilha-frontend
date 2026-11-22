@@ -2,6 +2,7 @@ import { useState } from "react";
 import { NavLink, useNavigate } from "react-router-dom";
 import { useAuth } from "../contexts/useAuth";
 import { rotaGerenciamentoAdmin } from "../services/administradoresService.js";
+import { erroCsrf, obterMensagemErro } from "../services/api.js";
 import logo from "../assets/logo.png";
 
 const links = [
@@ -36,8 +37,8 @@ function Sidebar({ podeGerenciarAdministradores = false }) {
     try {
       await logout();
       navigate("/login", { replace: true });
-    } catch {
-      setErroLogout("Não foi possível encerrar a sessão. Tente novamente.");
+    } catch (erro) {
+      setErroLogout(erroCsrf(erro) ? obterMensagemErro(erro) : "Não foi possível encerrar a sessão. Tente novamente.");
     }
   };
 

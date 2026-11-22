@@ -6,7 +6,7 @@ A CI valida cada push em `main` ou `develop` e cada pull request direcionado a u
 
 | Repositório | Diretório de execução | Validações |
 | --- | --- | --- |
-| Frontend | `pe-na-trilha/` | `npm run lint`, a suíte completa de `npm test` executada em série e `npm run build` |
+| Frontend | `pe-na-trilha/` | `npm run lint`, a suíte completa de `npm test` executada em série e builds de produção e homologação com origens sintéticas |
 | Backend | Raiz do repositório | `npm run lint` e `npm test -- --runInBand`, com cobertura do Jest |
 
 O frontend usa o Chrome pré-instalado no runner para os testes de navegador. A etapa falha se o executável estiver ausente, para que esses testes sempre sejam executados. A suíte externa do backend (`npm run test:integration`) continua opt-in e requer MongoDB e Cloudinary dedicados a testes.
@@ -19,9 +19,23 @@ O frontend usa o Chrome pré-instalado no runner para os testes de navegador. A 
 
 ## Entrega e implantação
 
-O build do frontend mostra que o projeto está pronto para ser publicado. A implantação acontece nos provedores de hospedagem. Os workflows locais executam a CI e não acionam deploy. As configurações dos painéis da Vercel e do Render precisam ser confirmadas por quem administra os serviços.
+A implantação acontece nos provedores de hospedagem. O workflow valida os builds e as configurações de implantação são administradas nos painéis da Vercel e do Render.
 
-- **Vercel.** Confirme o repositório vinculado e a branch de produção (`main` é a branch padrão observada no GitHub local). Use `pe-na-trilha` como diretório raiz, `npm run build` e saída `dist`. Configure `VITE_API_URL` com a URL HTTPS da API. Se a produção for o único ambiente permitido, selecione **Only build production**. Use **Deployment Checks**, quando disponíveis, para exigir **Validar frontend** antes da promoção. Caso essa opção esteja indisponível, proteja `main` com o check obrigatório e use promoção manual somente após conferir a CI do commit. [Settings da Vercel](https://vercel.com/docs/project-configuration/project-settings) · [Deployment Checks](https://vercel.com/docs/deployment-checks)
+- **Vercel.** Confirme o repositório vinculado e a branch de produção (`main` é a branch padrão observada no GitHub local). Use `pe-na-trilha` como diretório raiz e `dist` como saída. Configure o comando de cada ambiente conforme a tabela abaixo. Se a produção for o único ambiente permitido, selecione **Only build production**. Use **Deployment Checks**, quando disponíveis, para exigir **Validar frontend** antes da promoção. Caso essa opção esteja indisponível, proteja `main` com o check obrigatório e use promoção manual somente após conferir a CI do commit. [Settings da Vercel](https://vercel.com/docs/project-configuration/project-settings) · [Deployment Checks](https://vercel.com/docs/deployment-checks)
 - **Render e MongoDB Atlas.** Confirme a branch de produção do serviço e selecione **After CI Checks Pass** para condicionar o deploy ao resultado da CI. As credenciais do Atlas e as demais configurações privadas pertencem ao ambiente do serviço no Render. [Deploys no Render](https://render.com/docs/deploys)
 
-A CI não exige secrets no GitHub. A conexão nativa dos provedores ao GitHub é configurada nos respectivos painéis. `VITE_API_URL` é uma variável pública do frontend. Mantenha as credenciais de produção do backend exclusivamente no Render.
+### Modos do frontend
+
+| Modo | Comando em `pe-na-trilha/` | Valor de `VITE_API_URL` |
+| --- | --- | --- |
+| Desenvolvimento (`development`) | `npm run dev` | Origem HTTP ou HTTPS da API de desenvolvimento. Pode ser definida em `.env.local` a partir de `.env.example`. |
+| Produção (`production`) | `npm run build` | Origem HTTPS idêntica a `PNT_API_ORIGIN_PRODUCTION`. |
+| Homologação (`homologation`) | `npm run build:homologation` | Origem HTTPS idêntica a `PNT_API_ORIGIN_HOMOLOGATION`. |
+
+Os dois builds de distribuição exigem também `PNT_API_ORIGIN_PRODUCTION` e `PNT_API_ORIGIN_HOMOLOGATION`. Cadastre essas origens esperadas com os mesmos valores nos dois ambientes de build e selecione `VITE_API_URL` individualmente em cada ambiente. Elas devem representar as APIs autorizadas em domínios distintos. Configure as três variáveis no provedor ou em `.env.production` e `.env.homologation` locais, conforme o modo. As variáveis fornecidas pelo processo têm precedência sobre os arquivos `.env`.
+
+Use apenas origens, sem caminho, parâmetros, fragmento ou credenciais. O build de distribuição rejeita HTTP, IPs literais, nomes locais e origens trocadas. A validação depende do cadastro correto das duas origens pelo responsável pela hospedagem. `VITE_API_URL` fica no JavaScript público. As variáveis `PNT_API_ORIGIN_*` são usadas no build, e as credenciais pertencem ao backend.
+
+### Limite de login e CORS
+
+O backend retorna `Retry-After` no `429` do login. Para o navegador ler esse header entre origens, a configuração CORS do backend deve expor `Retry-After` por meio de `exposedHeaders: ["Retry-After"]`, preservando os demais headers expostos e a lista de origens permitidas. Até essa configuração entrar em vigor, o frontend usa a janela máxima atual do limitador, de cinco minutos, quando o header estiver indisponível. Valide na homologação se o contador começa no valor efetivamente recebido.

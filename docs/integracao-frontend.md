@@ -35,7 +35,7 @@ resposta foi acrescentado por inferência nesta revisão.
 - A API aplica propriedade, estado e papel administrativo. Controles no React
   apenas refletem essas regras; não substituem autorização.
 - URLs de fotos de publicações são relativas à origem da API, configurada no
-  frontend por `VITE_API_URL` (fallback atual: `http://localhost:3000`).
+  frontend por `VITE_API_URL`. As variáveis e os modos estão no [guia de CI/CD](ci-cd.md#modos-do-frontend).
 - O cliente Axios existente usa `withCredentials`, CSRF em mutações e renovação
   após 401. Não enviar JWT ou credenciais Cloudinary no corpo de formulários.
 

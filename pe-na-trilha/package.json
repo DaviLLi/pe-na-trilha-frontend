@@ -6,6 +6,7 @@
   "scripts": {
     "dev": "vite",
     "build": "vite build",
+    "build:homologation": "vite build --mode homologation",
     "lint": "eslint .",
     "test:auth": "node tests/authService.test.js && node tests/authValidation.test.js",
     "preview": "vite preview",

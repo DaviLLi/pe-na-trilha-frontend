@@ -106,7 +106,7 @@ Crie um arquivo `.env` dentro da pasta `pe-na-trilha`:
 VITE_API_URL=http://localhost:3000
 ```
 
-Essa variavel define o endereco da API usada pelo Axios. Se ela nao existir, o frontend usa `http://localhost:3000` por padrao.
+`VITE_API_URL` é obrigatória também no desenvolvimento. O exemplo acima aponta para a API local. Para os builds de produção e homologação, configure as origens HTTPS de cada ambiente conforme o [guia de CI/CD](docs/ci-cd.md#modos-do-frontend).
 
 ### Backend
 
@@ -161,6 +161,7 @@ Frontend:
 ```bash
 npm run dev
 npm run build
+npm run build:homologation
 npm run lint
 npm run preview
 ```

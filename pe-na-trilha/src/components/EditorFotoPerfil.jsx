@@ -6,13 +6,14 @@ import { AJUSTE_INICIAL_AVATAR, gerarArquivoAvatar } from "../services/recorteAv
 import RecorteAvatar from "./RecorteAvatar.jsx";
 
 export default function EditorFotoPerfil({ desabilitado = false, bloqueio, aoOcupado }) {
-  const { atualizarFotoPerfil } = useAuth();
+  const { usuario, atualizarFotoPerfil, excluirFotoPerfil } = useAuth();
   const [arquivo, setArquivo] = useState(null), [imagem, setImagem] = useState(null);
   const [ajuste, setAjuste] = useState({ ...AJUSTE_INICIAL_AVATAR });
   const [erroSelecao, setErroSelecao] = useState("");
   const [erro, setErro] = useState("");
   const [sucesso, setSucesso] = useState("");
-  const [salvando, setSalvando] = useState(false);
+  const [acaoAtual, setAcaoAtual] = useState(null);
+  const salvando = Boolean(acaoAtual);
   const ativo = useRef(false), operacao = useRef(null), ocupado = useRef(false);
   const inputId = useId();
   useEffect(() => { ativo.current = true;return () => { ativo.current = false;operacao.current?.abort(); }; }, []);
@@ -28,19 +29,51 @@ export default function EditorFotoPerfil({ desabilitado = false, bloqueio, aoOcu
     }
     decodificar();return () => { atual = false;bitmap?.close(); };
   }, [arquivo]);
-  async function salvar(evento) {
-    evento.preventDefault();
-    if (ocupado.current || desabilitado || bloqueio?.current || !imagem || erroSelecao) return;
-    ocupado.current = true;if (bloqueio) bloqueio.current = "foto";aoOcupado?.(true);setSalvando(true);setErro("");setSucesso("");
-    const controller = new AbortController();operacao.current = controller;
+  async function executar(acao, solicitar, mensagem, mensagemFalha) {
+    if (ocupado.current || desabilitado || bloqueio?.current) return;
+    ocupado.current = true;
+    if (bloqueio) bloqueio.current = "foto";
+    aoOcupado?.(true);
+    setAcaoAtual(acao);
+    setErro("");
+    setSucesso("");
+    const controller = new AbortController();
+    operacao.current = controller;
+    const { signal } = controller;
     try {
-      const recortada = await gerarArquivoAvatar(imagem, ajuste);
-      if (!ativo.current || controller.signal.aborted) return;
-      await atualizarFotoPerfil(recortada, { signal: controller.signal });
-      if (ativo.current && !controller.signal.aborted) { setArquivo(null);setImagem(null);setSucesso("Foto de perfil atualizada."); }
+      await solicitar(signal);
+      if (ativo.current && !signal.aborted) {
+        setArquivo(null);
+        setImagem(null);
+        setErroSelecao("");
+        setSucesso(mensagem);
+      }
     } catch (falha) {
-      if (ativo.current && !controller.signal.aborted) setErro(falha.response ? obterMensagemErro(falha) : "Não foi possível confirmar o envio da foto. Verifique sua conexão antes de tentar novamente.");
-    } finally { if (ativo.current && !controller.signal.aborted) { ocupado.current = false;if (bloqueio) bloqueio.current = null;aoOcupado?.(false);setSalvando(false); } }
+      if (ativo.current && !signal.aborted) setErro(falha.response ? obterMensagemErro(falha) : mensagemFalha);
+    } finally {
+      if (ativo.current && !signal.aborted) {
+        ocupado.current = false;
+        if (bloqueio) bloqueio.current = null;
+        aoOcupado?.(false);
+        setAcaoAtual(null);
+      }
+    }
+  }
+
+  function salvar(evento) {
+    evento.preventDefault();
+    if (!imagem || erroSelecao) return;
+    return executar("envio", async (signal) => {
+      const recortada = await gerarArquivoAvatar(imagem, ajuste);
+      if (ativo.current && !signal.aborted) await atualizarFotoPerfil(recortada, { signal });
+    }, "Foto de perfil atualizada.", "Não foi possível confirmar o envio da foto. Verifique sua conexão antes de tentar novamente.");
+  }
+
+  function remover() {
+    if (ocupado.current || desabilitado || bloqueio?.current || !usuario?.fotoPerfil) return;
+    if (!window.confirm("Remover sua foto de perfil?")) return;
+    return executar("remocao", (signal) => excluirFotoPerfil({ signal }),
+      "Foto de perfil removida.", "Não foi possível confirmar a remoção da foto. Verifique o perfil antes de tentar novamente.");
   }
   return <section id="editar-foto-perfil" className="profilePhotoSection" aria-labelledby="foto-perfil-titulo">
     <div className="profilePhotoHeading"><h3 id="foto-perfil-titulo">Sua foto de perfil</h3><p>Escolha uma foto e ajuste o enquadramento antes de salvar.</p></div>
@@ -60,7 +93,8 @@ export default function EditorFotoPerfil({ desabilitado = false, bloqueio, aoOcu
       {erroSelecao ? <p className="fieldError" role="alert">{erroSelecao}</p> : null}
       {erro ? <p className="storageAlert" role="alert">{erro}</p> : null}
       {sucesso ? <p className="profileEditSuccess" role="status">{sucesso}</p> : null}
-      <div className="profilePhotoActions"><button className="primaryButton" type="submit" disabled={salvando || desabilitado || !imagem || Boolean(erroSelecao)}>{salvando ? "Enviando foto..." : "Salvar foto"}</button>
+      <div className="profilePhotoActions"><button className="primaryButton" type="submit" disabled={salvando || desabilitado || !imagem || Boolean(erroSelecao)}>{acaoAtual === "envio" ? "Enviando foto..." : "Salvar foto"}</button>
+        {usuario?.fotoPerfil ? <button className="secondaryButton" type="button" disabled={salvando || desabilitado} onClick={remover}>{acaoAtual === "remocao" ? "Removendo foto…" : "Remover foto de perfil"}</button> : null}
         {arquivo ? <button className="secondaryButton" type="button" disabled={salvando || desabilitado} onClick={() => { setArquivo(null);setImagem(null);setErroSelecao("");setErro(""); }}>Cancelar seleção</button> : null}
       </div>
     </form>

@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState } from "react";
 import { Link, Navigate } from "react-router-dom";
 import {
-  alterarAdministrador, mensagemGerenciamentoAdmin,
+  alterarAdministrador, mensagemGerenciamentoAdmin, perdeuAcessoGerenciamento,
 } from "../services/administradoresService.js";
 import "../styles/gerenciamentoAdministradores.css";
 
@@ -125,7 +125,7 @@ export default function GerenciamentoAdministradores({ consulta }) {
     } catch (falha) {
       if (controller.signal.aborted) return;
       const mensagem = mensagemGerenciamentoAdmin(falha, true);
-      if ([401, 403].includes(falha.response?.status)) {
+      if (perdeuAcessoGerenciamento(falha)) {
         definirOperacao(null);
         consulta.bloquear(mensagem);
       } else {

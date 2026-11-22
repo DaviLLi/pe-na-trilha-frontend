@@ -1,5 +1,5 @@
 import assert from "node:assert/strict";
-import { afterEach, test } from "node:test";
+import { afterEach, beforeEach, test } from "node:test";
 import { AxiosError, isCancel } from "axios";
 import api, { definirTratadorNaoAutorizado, obterMensagemErro } from "../src/services/api.js";
 import { obterUrlImagemPublica, buscarImagemPrivada } from "../src/services/imagensPublicacoesService.js";
@@ -17,6 +17,7 @@ function falhar(config, status, data) {
   throw new AxiosError(`HTTP ${status}`, AxiosError.ERR_BAD_RESPONSE, config, undefined,
     { config, status, data, headers: { "x-synthetic": "preserved" } });
 }
+beforeEach(() => { api.defaults.baseURL = "https://api.example.invalid"; });
 afterEach(() => {
   api.defaults.adapter = adaptadorAnterior; api.defaults.baseURL = baseAnterior;
   definirTratadorNaoAutorizado(null);
@@ -60,8 +61,8 @@ test("bloqueia URLs externas, assinadas, arbitrárias e mistura de contextos", a
   await assert.rejects(buscarImagemPrivada(publico), /URL/);
   assert.equal(chamadas, 0);
 });
-test("não resolve origem de API inválida nem credenciais embutidas", () => {
-  for (const origem of ["/api", "not-a-url", "ftp://example.invalid", "https://user:secret@example.invalid"]) {
+test("não resolve origem de API ausente, inválida ou com credenciais embutidas", () => {
+  for (const origem of [undefined, "/api", "not-a-url", "ftp://example.invalid", "https://user:secret@example.invalid"]) {
     api.defaults.baseURL = origem;
     assert.throws(() => obterUrlImagemPublica(publico), { message: "Origem da API inválida." });
   }
