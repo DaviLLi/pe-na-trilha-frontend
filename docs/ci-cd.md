@@ -26,15 +26,14 @@ A implantação acontece nos provedores de hospedagem. O workflow valida os buil
 
 ### Modos do frontend
 
-| Modo | Comando em `pe-na-trilha/` | Valor de `VITE_API_URL` |
-| --- | --- | --- |
-| Desenvolvimento (`development`) | `npm run dev` | Origem HTTP ou HTTPS da API de desenvolvimento. Pode ser definida em `.env.local` a partir de `.env.example`. |
-| Produção (`production`) | `npm run build` | Origem HTTPS idêntica a `PNT_API_ORIGIN_PRODUCTION`. |
-| Homologação (`homologation`) | `npm run build:homologation` | Origem HTTPS idêntica a `PNT_API_ORIGIN_HOMOLOGATION`. |
+| Comando em `pe-na-trilha/` | API |
+| --- | --- |
+| `npm run dev:production` | `http://localhost:3000` |
+| `npm run dev:homologation` | `http://127.0.0.1:3001` |
+| `npm run build` | Origem HTTPS de produção em `VITE_API_URL`, fornecida pela Vercel ou pelo `.env.production` local |
+| `npm run build:homologation` | `http://127.0.0.1:3001` |
 
-Os dois builds de distribuição exigem também `PNT_API_ORIGIN_PRODUCTION` e `PNT_API_ORIGIN_HOMOLOGATION`. Cadastre essas origens esperadas com os mesmos valores nos dois ambientes de build e selecione `VITE_API_URL` individualmente em cada ambiente. Elas devem representar as APIs autorizadas em domínios distintos. Configure as três variáveis no provedor ou em `.env.production` e `.env.homologation` locais, conforme o modo. As variáveis fornecidas pelo processo têm precedência sobre os arquivos `.env`.
-
-Use apenas origens, sem caminho, parâmetros, fragmento ou credenciais. O build de distribuição rejeita HTTP, IPs literais, nomes locais e origens trocadas. A validação depende do cadastro correto das duas origens pelo responsável pela hospedagem. `VITE_API_URL` fica no JavaScript público. As variáveis `PNT_API_ORIGIN_*` são usadas no build, e as credenciais pertencem ao backend.
+Na Vercel, selecione `pe-na-trilha` como raiz e `dist` como saída. O `vercel.json` nessa raiz redireciona rotas do BrowserRouter para o HTML da SPA. `VITE_API_URL` exige somente uma origem, com HTTPS e sem caminho, credenciais ou parâmetros. Os endereços de API são públicos.
 
 ### Limite de login e CORS
 

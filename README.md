@@ -96,82 +96,18 @@ pe-na-trilha-frontend/
 | `PUT`    | `/trilhas/:id` | Atualiza uma trilha         |
 | `DELETE` | `/trilhas/:id` | Remove uma trilha           |
 
-## Como configurar
-
-### Frontend
-
-Crie um arquivo `.env` dentro da pasta `pe-na-trilha`:
-
-```env
-VITE_API_URL=http://localhost:3000
-```
-
-`VITE_API_URL` é obrigatória também no desenvolvimento. O exemplo acima aponta para a API local. Para os builds de produção e homologação, configure as origens HTTPS de cada ambiente conforme o [guia de CI/CD](docs/ci-cd.md#modos-do-frontend).
-
-### Backend
-
-Crie um arquivo `.env` dentro da pasta `pe-na-trilha-backend`:
-
-```env
-PORT=3000
-MONGO_URI=mongodb+srv://usuario:senha@cluster.mongodb.net/pe-na-trilha
-FRONTEND_URL=http://localhost:5173
-```
-
-Substitua `MONGO_URI` pela string real do seu banco MongoDB. Nao envie arquivos `.env` com credenciais para o repositorio.
-
 ## Como executar
 
-### Backend
+Instale as dependências com `npm ci` na pasta do backend e em `pe-na-trilha/` neste repositório. Use o mesmo comando de ambiente em cada terminal.
 
-Em um terminal:
+| Ambiente | Comando nos dois projetos | Frontend | API |
+| --- | --- | --- | --- |
+| Produção local | `npm run dev:production` | `http://localhost:5173` | `http://localhost:3000` |
+| Homologação | `npm run dev:homologation` | `http://127.0.0.1:5174` | `http://127.0.0.1:3001` |
 
-```bash
-cd pe-na-trilha-backend
-npm install
-npm run dev
-```
+O frontend local já seleciona o endereço correspondente. Para a Vercel, defina `VITE_API_URL` com a origem HTTPS real do backend de produção e use `npm run build` em `pe-na-trilha/`. Para executar o mesmo build localmente, use `pe-na-trilha/.env.production`. A URL entra no bundle público. Mantenha credenciais somente no backend.
 
-A API ficara disponivel em:
-
-```text
-http://localhost:3000
-```
-
-### Frontend
-
-Em outro terminal:
-
-```bash
-cd pe-na-trilha
-npm install
-npm run dev
-```
-
-O Vite mostrara o endereco local do frontend, normalmente:
-
-```text
-http://localhost:5173
-```
-
-## Scripts
-
-Frontend:
-
-```bash
-npm run dev
-npm run build
-npm run build:homologation
-npm run lint
-npm run preview
-```
-
-Backend:
-
-```bash
-npm run dev
-npm start
-```
+Use `npm run build:homologation` para um bundle voltado à API local de homologação. `npm test` e `npm run lint` executam as verificações do frontend.
 
 ## Integracao entre front e back
 

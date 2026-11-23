@@ -4,7 +4,8 @@
   "version": "0.0.0",
   "type": "module",
   "scripts": {
-    "dev": "vite",
+    "dev:production": "vite --mode production",
+    "dev:homologation": "vite --mode homologation",
     "build": "vite build",
     "build:homologation": "vite build --mode homologation",
     "lint": "eslint .",
