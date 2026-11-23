@@ -1,64 +1,58 @@
-import { fileURLToPath } from 'node:url'
+import { readFileSync } from 'node:fs'
 import { isIP } from 'node:net'
-import { defineConfig, loadEnv } from 'vite'
+import process from 'node:process'
+import { parseEnv } from 'node:util'
+import { defineConfig } from 'vite'
 import react from '@vitejs/plugin-react'
 
-const diretorio = fileURLToPath(new URL('.', import.meta.url))
-const origensDistribuicao = {
-  production: 'PNT_API_ORIGIN_PRODUCTION',
-  homologation: 'PNT_API_ORIGIN_HOMOLOGATION',
-}
-
-function lerOrigem(ambiente, nome, distribuicao, permiteHttpLocal = false) {
-  const valor = ambiente[nome]?.trim()
-  if (!valor) throw new Error(`Configure ${nome} para este modo.`)
-
-  let url
-  try { url = new URL(valor) } catch { throw new Error(`${nome} deve ser uma origem HTTP ou HTTPS válida.`) }
-  if (!/^https?:\/\/[^/?#]+\/?$/i.test(valor) || url.username || url.password || url.pathname !== '/') {
-    throw new Error(`${nome} deve conter somente a origem da API, sem credenciais, caminho, query ou fragmento.`)
-  }
-  const httpLocal = permiteHttpLocal && /^http:\/\/(?:localhost|127\.0\.0\.1)(?::\d+)?\/?$/i.test(valor)
-  if (distribuicao && !httpLocal) {
-    const host = url.hostname.replace(/\.$/, '')
-    if (url.protocol !== 'https:' || !host.includes('.') || isIP(host)
-      || /(?:^|\.)(localhost|localdomain|local|internal|lan|home|test)$|\.home\.arpa$/.test(host)) {
-      throw new Error(`${nome} deve usar HTTPS em um domínio não local.`)
-    }
-  }
-  return url
+const modosLocais = {
+  production: { host: 'localhost', port: 5173, api: 'http://localhost:3000' },
+  homologation: { host: '127.0.0.1', port: 5174, api: 'http://127.0.0.1:3001' },
 }
 
 export function validarApi(env, command, mode) {
-  const distribuicao = command === 'build' || mode !== 'development'
-  if (distribuicao && !Object.hasOwn(origensDistribuicao, mode)) {
-    throw new Error('Modo inválido. Use production ou homologation para builds de distribuição.')
+  if (!Object.hasOwn(modosLocais, mode)) {
+    throw new Error('Use o modo production ou homologation.')
   }
+  if (command === 'serve' || mode === 'homologation') return modosLocais[mode].api
 
-  const permiteHttpLocal = mode === 'homologation'
-  const api = lerOrigem(env, 'VITE_API_URL', distribuicao, permiteHttpLocal)
-  if (distribuicao) {
-    const producao = lerOrigem(env, origensDistribuicao.production, true)
-    const homologacao = lerOrigem(env, origensDistribuicao.homologation, true, permiteHttpLocal)
-    if (producao.hostname.replace(/\.$/, '') === homologacao.hostname.replace(/\.$/, '')) {
-      throw new Error('Produção e homologação devem usar domínios de API distintos.')
-    }
-    const esperada = mode === 'production' ? producao : homologacao
-    if (api.origin !== esperada.origin) {
-      throw new Error(`VITE_API_URL deve corresponder a ${origensDistribuicao[mode]} neste modo.`)
-    }
+  const valor = env.VITE_API_URL?.trim()
+  if (!valor) throw new Error('Configure VITE_API_URL com a origem HTTPS da API de produção.')
+  let url
+  try {
+    url = new URL(valor)
+  } catch {
+    throw new Error('VITE_API_URL deve ser uma origem HTTPS válida.')
   }
-  return api.origin
+  const host = url.hostname.replace(/\.$/, '')
+  if (!/^https:\/\/[^/?#]+\/?$/i.test(valor) || url.username || url.password
+    || !host.includes('.') || isIP(host)
+    || /(?:^|\.)(localhost|localdomain|local|internal|lan|home|test)$|\.home\.arpa$/.test(host)) {
+    throw new Error('VITE_API_URL deve usar HTTPS em um domínio não local, sem credenciais, caminho, query ou fragmento.')
+  }
+  return url.origin
+}
+
+function ambienteProducao() {
+  if (process.env.VITE_API_URL !== undefined) return { VITE_API_URL: process.env.VITE_API_URL }
+  try {
+    return parseEnv(readFileSync(new URL('./.env.production', import.meta.url), 'utf8'))
+  } catch (erro) {
+    if (erro.code === 'ENOENT') return {}
+    throw erro
+  }
 }
 
 export default defineConfig(({ command, mode, isPreview }) => {
-  if (isPreview) return { plugins: [react()] }
+  if (isPreview) return { plugins: [react()], envDir: false }
 
-  const env = loadEnv(mode, diretorio, ['VITE_API_URL', 'PNT_API_ORIGIN_'])
-  const origemApi = validarApi(env, command, mode)
+  const origemApi = validarApi(command === 'build' && mode === 'production' ? ambienteProducao() : {}, command, mode)
+  const { host, port } = modosLocais[mode]
 
   return {
     plugins: [react()],
+    envDir: false,
+    server: { host, port, strictPort: true },
     define: { 'import.meta.env.VITE_API_URL': JSON.stringify(origemApi) },
   }
 })

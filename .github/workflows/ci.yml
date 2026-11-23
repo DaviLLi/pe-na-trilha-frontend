@@ -45,8 +45,7 @@ jobs:
 
       - name: Builds de distribuição com origens sintéticas
         env:
-          PNT_API_ORIGIN_PRODUCTION: https://api-production.example.invalid
-          PNT_API_ORIGIN_HOMOLOGATION: https://api-homologation.example.invalid
+          VITE_API_URL: https://api-production.example.invalid
         run: |
-          VITE_API_URL="$PNT_API_ORIGIN_PRODUCTION" npm run build
-          VITE_API_URL="$PNT_API_ORIGIN_HOMOLOGATION" npm run build:homologation
+          npm run build
+          npm run build:homologation
