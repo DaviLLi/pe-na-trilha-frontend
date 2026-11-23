@@ -1,0 +1,51 @@
+name: CI
+
+on:
+  push:
+    branches: [main, develop]
+  pull_request:
+    branches: [main, develop]
+
+permissions:
+  contents: read
+
+jobs:
+  validar:
+    name: Validar frontend
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+    defaults:
+      run:
+        working-directory: pe-na-trilha
+
+    steps:
+      - uses: actions/checkout@v6
+        with:
+          persist-credentials: false
+
+      - uses: actions/setup-node@v6
+        with:
+          node-version: '22'
+          cache: npm
+          cache-dependency-path: pe-na-trilha/package-lock.json
+
+      - name: Instalar dependências
+        run: npm ci
+
+      - name: ESLint
+        run: npm run lint
+
+      - name: Testes automatizados
+        env:
+          PNT_CHROME_BIN: /usr/bin/google-chrome
+        run: |
+          test -x "$PNT_CHROME_BIN"
+          "$PNT_CHROME_BIN" --version
+          node --test --test-concurrency=1 tests/*.test.js
+
+      - name: Builds de distribuição com origens sintéticas
+        env:
+          VITE_API_URL: https://api-production.example.invalid
+        run: |
+          npm run build
+          npm run build:homologation

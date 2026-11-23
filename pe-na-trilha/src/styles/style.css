@@ -3,6 +3,8 @@
 @import url("sidebar.css");
 @import url("post.css");
 @import url("newPost.css");
+@import url("auth.css");
+@import "./product.css";
 
 /* Importa fontes usadas no projeto */
 @import url("https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700;800&family=Sora:wght@600;700&display=swap");
@@ -35,22 +37,15 @@ body {
   font-family: var(--font-body);
   min-height: 100vh;
 
-  /* Fundo com degradê escuro e toque de verde no topo */
+  /* Base única usada pelo feed e pelas telas internas. */
   background:
-    radial-gradient(circle at top, rgba(0, 179, 126, 0.14), transparent 24rem),
-    linear-gradient(
-      180deg,
-      #050607 0%,
-      #0b0f0d 30%,
-      #101614 68%,
-      #16312b 100%
-    );
+    radial-gradient(ellipse at 86% 105%, rgba(44, 189, 142, 0.12), transparent 42%),
+    #07100e;
 
   /* Faz o fundo ficar "preso" enquanto o conteúdo rola */
   background-attachment: fixed;
 
-  /* Cria espaço para o header fixo não cobrir o conteúdo */
-  padding-top: 9rem;
+  padding: 0;
   color: var(--color-white-1);
 }
 
@@ -73,7 +68,7 @@ body {
   display: inline-flex;
   margin-bottom: 0.9rem;
   color: var(--color-green-1);
-  font-size: 0.82rem;
+  font-size: 0.943rem;
   font-weight: 800;
   text-transform: uppercase;
 }
@@ -83,7 +78,7 @@ body {
   margin: 0;
   color: var(--color-white-1);
   font-family: var(--font-display);
-  font-size: clamp(2rem, 5vw, 3.7rem);
+  font-size: clamp(2.3rem, 5.75vw, 4.255rem);
   line-height: 1.05;
 }
 
@@ -91,7 +86,7 @@ body {
   max-width: 720px;
   margin: 1rem 0 0;
   color: var(--color-gray-2);
-  font-size: 1.05rem;
+  font-size: 1.2075rem;
   line-height: 1.7;
 }
 
@@ -113,7 +108,7 @@ body {
   margin: 0 0 0.85rem;
   color: var(--color-white-1);
   font-family: var(--font-display);
-  font-size: 1.15rem;
+  font-size: 1.3225rem;
 }
 
 .infoPanel p,
@@ -142,12 +137,6 @@ body {
 }
 
 @media (max-width: 480px) {
-  body {
-    /* No mobile eu só reduzo o espaço do topo */
-    min-height: 100vh;
-    padding-top: 9.5rem;
-  }
-
   .contentPage {
     width: calc(100% - 2rem);
   }

@@ -1,0 +1,30 @@
+.feedPage {
+  position: relative;
+  isolation: isolate;
+  --feed-scenery-top: 0px;
+}
+
+.feedScenery {
+  position: absolute;
+  z-index: -1;
+  inset: 0;
+  pointer-events: none;
+}
+
+.feedScenery img {
+  display: block;
+  position: sticky;
+  top: var(--feed-scenery-top);
+  width: 100%;
+  height: calc(100dvh - var(--feed-scenery-top));
+  object-fit: cover;
+  object-position: center;
+  filter: brightness(.64);
+}
+
+@media (max-width: 640px) {
+  .feedPage {
+    /* Altura do menu fixo no celular. */
+    --feed-scenery-top: 7.5rem;
+  }
+}

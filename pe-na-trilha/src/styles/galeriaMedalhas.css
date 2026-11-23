@@ -1,0 +1,340 @@
+.medalCollection {
+  display: none;
+}
+
+@media (min-width: 861px) and (hover: hover) and (pointer: fine) {
+  .medalCollection {
+    display: block;
+    min-width: 0;
+    margin-top: 2.15rem;
+  }
+
+  .medalCollectionHeading {
+    display: flex;
+    align-items: baseline;
+    justify-content: space-between;
+    gap: 1rem;
+    margin-bottom: 0.85rem;
+  }
+
+  .medalCollectionHeading h2 {
+    margin: 0;
+    color: var(--product-text);
+    font: 700 clamp(1.3rem, 2.1vw, 1.7rem) var(--font-display);
+  }
+
+  .medalCollectionHeading p {
+    margin: 0;
+    color: var(--product-muted);
+    font-size: 0.85rem;
+  }
+
+  .medalCollectionProgress {
+    display: flex;
+    align-items: center;
+    justify-content: flex-end;
+    flex-wrap: wrap;
+    gap: 0.4rem 0.7rem;
+    text-align: right;
+  }
+
+  .medalCollectionRetry {
+    min-height: 2rem;
+    padding: 0.25rem 0.65rem;
+    border: 1px solid var(--product-line);
+    border-radius: 0.45rem;
+    background: var(--product-panel);
+    color: var(--product-green-hover);
+    font: inherit;
+    font-size: 0.85rem;
+    cursor: pointer;
+  }
+
+  .medalCollectionRetry:hover:not([aria-disabled="true"]) {
+    border-color: var(--product-green-hover);
+  }
+
+  .medalCollectionRetry:focus-visible {
+    outline: 2px solid var(--product-green-hover);
+    outline-offset: 2px;
+  }
+
+  .medalCollectionRetry[aria-disabled="true"] {
+    color: var(--product-muted);
+    cursor: default;
+  }
+
+  .medalCollectionPanels {
+    display: flex;
+    gap: clamp(0.45rem, 1vw, 0.75rem);
+    min-width: 0;
+    margin: 0;
+    padding: 0;
+    list-style: none;
+  }
+
+  .medalCollectionPanel {
+    --medal-tone: 117 221 202;
+    position: relative;
+    isolation: isolate;
+    flex: 0 1 clamp(3.7rem, 7.2vw, 6.5rem);
+    min-width: 0;
+    height: clamp(18.75rem, 27vw, 21.5rem);
+    overflow: hidden;
+    overflow: clip;
+    border: 1px solid rgb(var(--medal-tone) / 0.22);
+    border-radius: 0.95rem;
+    background: linear-gradient(158deg, rgb(var(--medal-tone) / 0.105), transparent 70%), #0c1b17;
+    transition: flex-grow 340ms cubic-bezier(0.22, 0.65, 0.24, 1), border-color 220ms ease;
+  }
+
+  .medalCollectionPanel[data-medal="verde"] { --medal-tone: 95 222 161; }
+  .medalCollectionPanel[data-medal="bronze"] { --medal-tone: 240 168 118; }
+  .medalCollectionPanel[data-medal="prata"] { --medal-tone: 183 218 227; }
+  .medalCollectionPanel[data-medal="ouro"] { --medal-tone: 250 213 116; }
+
+  .medalCollectionPanel[data-locked="true"] {
+    border-color: rgb(178 199 191 / 0.17);
+    background: linear-gradient(158deg, rgb(158 177 170 / 0.08), transparent 65%), #0e1a17;
+  }
+
+  .medalCollectionPanel[data-expanded="true"] {
+    flex-grow: 1;
+    border-color: rgb(var(--medal-tone) / 0.48);
+  }
+
+  .medalCollectionPanel[data-expanded="true"][data-locked="true"] {
+    border-color: rgb(var(--medal-tone) / 0.27);
+  }
+
+  .medalCollectionTab {
+    position: absolute;
+    z-index: 2;
+    inset: 0;
+    display: block;
+    width: 100%;
+    height: 100%;
+    padding: 0;
+    border: 0;
+    border-radius: inherit;
+    background: transparent;
+    color: var(--product-text);
+    font: inherit;
+    cursor: pointer;
+  }
+
+  .medalCollectionTab:focus-visible {
+    outline: 2px solid var(--product-green-hover);
+    outline-offset: -4px;
+  }
+
+  .medalCollectionTabContent {
+    display: grid;
+    grid-template-rows: auto 1fr auto;
+    justify-items: center;
+    align-items: center;
+    height: 100%;
+    padding: 0.95rem 0.3rem;
+    font-size: 0.86rem;
+    font-weight: 650;
+    box-sizing: border-box;
+  }
+
+  .medalCollectionTabContent > span:nth-child(2) {
+    writing-mode: vertical-rl;
+    transform: rotate(180deg);
+  }
+
+  .medalCollectionThumb {
+    display: block;
+    width: min(100%, 3.15rem);
+    aspect-ratio: 1;
+    object-fit: contain;
+  }
+
+  .medalCollectionState {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.45rem;
+    color: #bbc9c3;
+  }
+
+  .medalCollectionState[data-state="Conquistada"] { color: #b0f1cf; }
+
+  .medalCollectionDot {
+    width: 0.38rem;
+    height: 0.38rem;
+    flex: none;
+    border: 1px solid currentColor;
+    border-radius: 50%;
+    box-sizing: border-box;
+  }
+
+  .medalCollectionState[data-state="Conquistada"] .medalCollectionDot {
+    background: currentColor;
+    box-shadow: 0 0 10px rgb(159 252 203 / 0.43);
+  }
+
+  .medalCollectionTabContent .medalCollectionState {
+    display: grid;
+    width: 1.55rem;
+    height: 1.55rem;
+    place-items: center;
+    border: 1px solid rgb(184 211 198 / 0.17);
+    border-radius: 50%;
+  }
+
+  .medalCollectionTabContent .medalCollectionStateText { display: none; }
+
+  .medalCollectionRegion {
+    position: absolute;
+    inset: 0.75rem;
+    container-type: inline-size;
+    perspective: 850px;
+  }
+
+  .medalHolo {
+    position: relative;
+    isolation: isolate;
+    display: grid;
+    align-content: center;
+    justify-items: center;
+    gap: 0.55rem;
+    height: 100%;
+    padding: 0.75rem;
+    overflow: hidden;
+    border: 1px solid rgb(var(--medal-tone) / 0.29);
+    border-radius: 0.68rem;
+    background:
+      radial-gradient(ellipse at 25% 35%, rgb(var(--medal-tone) / 0.17), transparent 59%),
+      linear-gradient(147deg, #19332b, #0b1715 73%);
+    box-sizing: border-box;
+    transform: rotateX(var(--tilt-x, 0deg)) rotateY(var(--tilt-y, 0deg));
+    transition: transform 160ms ease-out;
+    animation: medalHoloReveal 300ms ease both;
+  }
+
+  @keyframes medalHoloReveal {
+    from { opacity: 0; }
+    to { opacity: 1; }
+  }
+
+  .medalHolo::before {
+    content: "";
+    position: absolute;
+    z-index: -1;
+    inset: 0;
+    pointer-events: none;
+    background:
+      radial-gradient(ellipse at var(--foil-x, 21%) var(--foil-y, 37%),
+        rgb(242 252 190 / 0.16), rgb(117 224 206 / 0.12) 16%, transparent 48%),
+      repeating-linear-gradient(118deg, transparent 0 5px, rgb(var(--medal-tone) / 0.09) 6px, transparent 7px 12px),
+      linear-gradient(125deg, transparent 14%, rgb(177 177 252 / 0.11) 29%,
+        rgb(120 236 212 / 0.15) 38%, transparent 48%, rgb(241 193 136 / 0.09) 68%, transparent 83%);
+    opacity: 0.75;
+    transition: opacity 220ms ease;
+  }
+
+  .medalCollectionPanel:hover .medalHolo::before { opacity: 1; }
+
+  .medalHoloArtwork {
+    position: relative;
+    display: grid;
+    isolation: isolate;
+    place-items: center;
+    width: 8.1rem;
+    max-width: 100%;
+    aspect-ratio: 1;
+  }
+
+  .medalHoloArtwork::before {
+    content: "";
+    position: absolute;
+    z-index: -1;
+    inset: 0;
+    border: 1px solid rgb(var(--medal-tone) / 0.25);
+    border-radius: 50%;
+    background: radial-gradient(circle, rgb(var(--medal-tone) / 0.21), transparent 70%);
+    box-shadow: 0 0 0 0.38rem rgb(var(--medal-tone) / 0.07), inset 0 0 0 0.38rem rgb(var(--medal-tone) / 0.06);
+  }
+
+  .medalHoloImage {
+    display: block;
+    width: 90%;
+    height: auto;
+    aspect-ratio: 1;
+    object-fit: contain;
+    filter: drop-shadow(0 8px 12px #050e0bd9);
+  }
+
+  .medalCollectionPanel[data-locked="true"] .medalHolo {
+    background: radial-gradient(ellipse at 23% 33%, #31423d 0%, transparent 60%), #121c19;
+  }
+
+  .medalCollectionPanel[data-locked="true"] .medalHolo::before { opacity: 0.32; }
+
+  .medalCollectionPanel[data-locked="true"] :is(.medalCollectionThumb, .medalHoloImage) {
+    filter: grayscale(0.68) brightness(0.78) drop-shadow(0 5px 8px #07100c96);
+  }
+
+  .medalHoloCopy {
+    min-width: 0;
+    text-align: center;
+  }
+
+  .medalHoloCopy .medalCollectionState {
+    min-height: 1.55rem;
+    padding: 0.12rem 0.5rem;
+    border: 1px solid rgb(182 219 201 / 0.23);
+    border-radius: 0.35rem;
+    background: #091713d4;
+    font-size: 0.71rem;
+    font-weight: 650;
+  }
+
+  .medalHoloCopy h3 {
+    margin: 0.4rem 0 0.1rem;
+    color: var(--product-text);
+    font: 750 clamp(1.25rem, 6cqi, 2.3rem)/1.12 var(--font-display);
+    overflow-wrap: anywhere;
+  }
+
+  .medalHoloCopy strong {
+    color: rgb(var(--medal-tone));
+    font-size: 0.91rem;
+    font-weight: 650;
+  }
+
+  .medalHoloCopy p {
+    margin: 0.35rem 0 0;
+    color: #d1dfda;
+    font-size: 0.83rem;
+    line-height: 1.4;
+  }
+
+  @container (min-width: 25rem) {
+    .medalHolo {
+      grid-template-columns: minmax(0, 0.9fr) minmax(0, 1fr);
+      align-items: center;
+      gap: 0.9rem;
+      padding: clamp(1rem, 4cqi, 2.5rem);
+    }
+
+    .medalHoloArtwork { width: clamp(8.5rem, 34cqi, 13rem); }
+    .medalHoloCopy { justify-self: start; text-align: left; }
+    .medalHoloCopy h3 { margin-top: 0.65rem; }
+    .medalHoloCopy strong { font-size: 1rem; }
+    .medalHoloCopy p { margin-top: 0.6rem; font-size: 0.9rem; }
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .medalCollectionPanel,
+  .medalHolo,
+  .medalHolo::before {
+    transition: none;
+    animation: none;
+  }
+
+  .medalHolo { transform: none; }
+}

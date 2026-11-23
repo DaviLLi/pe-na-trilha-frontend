@@ -26,6 +26,7 @@ dist-ssr
 # ambiente
 .env
 .env.local
+.vite/
 
 # ferramentas locais
 .agents/

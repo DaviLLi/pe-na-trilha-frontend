@@ -2,6 +2,11 @@
 
 Projeto academico full stack para cadastro e gerenciamento de trilhas. A aplicacao e dividida em um frontend React com Vite e uma API REST em Node.js, responsavel pela persistencia dos dados no banco.
 
+> Estado atual do frontend: autenticação por cookies, perguntas opcionais, seletor de duração,
+> Central de Ajuda, documentos e aceite no cadastro estão implementados. Publicação, aprovação
+> e contagem de medalhas ainda dependem de contratos com a API. Consulte
+> [contratos e limitações da integração](docs/integracao-frontend.md) antes de usar as instruções históricas abaixo.
+
 ## Tecnologias
 
 Frontend:
@@ -72,100 +77,37 @@ pe-na-trilha-frontend/
 
 ## Rotas do frontend
 
-| Rota | Pagina |
-| --- | --- |
-| `/` | Pagina inicial |
-| `/trilhas` | Lista de trilhas |
-| `/trilhas/nova` | Cadastro de trilha |
-| `/trilhas/:id/editar` | Edicao de trilha |
-| `/sobre` | Sobre o projeto |
-| `/sprint-3` | Apresentacao da sprint |
+| Rota                  | Pagina                 |
+| --------------------- | ---------------------- |
+| `/`                   | Pagina inicial         |
+| `/trilhas`            | Lista de trilhas       |
+| `/trilhas/nova`       | Cadastro de trilha     |
+| `/trilhas/:id/editar` | Edicao de trilha       |
+| `/sobre`              | Sobre o projeto        |
+| `/sprint-3`           | Apresentacao da sprint |
 
 ## Rotas da API
 
-| Metodo | Rota | Acao |
-| --- | --- | --- |
-| `GET` | `/trilhas` | Lista todas as trilhas |
-| `GET` | `/trilhas/:id` | Busca uma trilha especifica |
-| `POST` | `/trilhas` | Cadastra uma nova trilha |
-| `PUT` | `/trilhas/:id` | Atualiza uma trilha |
-| `DELETE` | `/trilhas/:id` | Remove uma trilha |
-
-## Como configurar
-
-### Frontend
-
-Crie um arquivo `.env` dentro da pasta `pe-na-trilha`:
-
-```env
-VITE_API_URL=http://localhost:3000
-```
-
-Essa variavel define o endereco da API usada pelo Axios. Se ela nao existir, o frontend usa `http://localhost:3000` por padrao.
-
-### Backend
-
-Crie um arquivo `.env` dentro da pasta `pe-na-trilha-backend`:
-
-```env
-PORT=3000
-MONGO_URI=mongodb+srv://usuario:senha@cluster.mongodb.net/pe-na-trilha
-FRONTEND_URL=http://localhost:5173
-```
-
-Substitua `MONGO_URI` pela string real do seu banco MongoDB. Nao envie arquivos `.env` com credenciais para o repositorio.
+| Metodo   | Rota           | Acao                        |
+| -------- | -------------- | --------------------------- |
+| `GET`    | `/trilhas`     | Lista todas as trilhas      |
+| `GET`    | `/trilhas/:id` | Busca uma trilha especifica |
+| `POST`   | `/trilhas`     | Cadastra uma nova trilha    |
+| `PUT`    | `/trilhas/:id` | Atualiza uma trilha         |
+| `DELETE` | `/trilhas/:id` | Remove uma trilha           |
 
 ## Como executar
 
-### Backend
+Instale as dependências com `npm ci` na pasta do backend e em `pe-na-trilha/` neste repositório. Use o mesmo comando de ambiente em cada terminal.
 
-Em um terminal:
+| Ambiente | Comando nos dois projetos | Frontend | API |
+| --- | --- | --- | --- |
+| Produção local | `npm run dev:production` | `http://localhost:5173` | `http://localhost:3000` |
+| Homologação | `npm run dev:homologation` | `http://127.0.0.1:5174` | `http://127.0.0.1:3001` |
 
-```bash
-cd pe-na-trilha-backend
-npm install
-npm run dev
-```
+O frontend local já seleciona o endereço correspondente. Para a Vercel, defina `VITE_API_URL` com a origem HTTPS real do backend de produção e use `npm run build` em `pe-na-trilha/`. Para executar o mesmo build localmente, use `pe-na-trilha/.env.production`. A URL entra no bundle público. Mantenha credenciais somente no backend.
 
-A API ficara disponivel em:
-
-```text
-http://localhost:3000
-```
-
-### Frontend
-
-Em outro terminal:
-
-```bash
-cd pe-na-trilha
-npm install
-npm run dev
-```
-
-O Vite mostrara o endereco local do frontend, normalmente:
-
-```text
-http://localhost:5173
-```
-
-## Scripts
-
-Frontend:
-
-```bash
-npm run dev
-npm run build
-npm run lint
-npm run preview
-```
-
-Backend:
-
-```bash
-npm run dev
-npm start
-```
+Use `npm run build:homologation` para um bundle voltado à API local de homologação. `npm test` e `npm run lint` executam as verificações do frontend.
 
 ## Integracao entre front e back
 
@@ -207,11 +149,8 @@ DELETE /trilhas/:id
 
 - O backend deve estar rodando antes de usar as telas de cadastro, listagem, edicao e exclusao.
 - O CORS do backend deve permitir a origem do frontend, normalmente `http://localhost:5173`.
-- O projeto nao possui autenticacao, upload de imagens, comentarios ou avaliacoes.
+- O frontend possui autenticação preparada para cookies HttpOnly; o funcionamento depende da API. Upload de imagens, comentários e avaliações não estão implementados na interface.
 
-## Integrantes
+## Desenvolvido
 
 - Davi Martinelli Landal
-- Victor Schmitz Alvim de Oliveira
-- Hiago Farias Veloso
-- Hiuri Machado Cardozo

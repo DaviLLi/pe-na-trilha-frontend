@@ -1,0 +1,87 @@
+import { chavesRespostasTrilha } from "../data/detalhesTrilha.js";
+
+export function alterarResposta(respostas, chave, valor) {
+  return {
+    ...respostas,
+    [chave]: valor,
+    ...(chave === "tipoLocal" ? { caracteristicaPrincipal: "" } : {}),
+  };
+}
+
+export function ajustarDuracao(duracao, unidade, incremento) {
+  if (!["horas", "minutos"].includes(unidade)) return duracao;
+  const atual = duracao || { horas: 0, minutos: 0 };
+  const limite = unidade === "horas" ? 23 : 59;
+  return { ...atual, [unidade]: Math.min(limite, Math.max(0, atual[unidade] + incremento)) };
+}
+
+export function duracaoValida(duracao) {
+  return duracao === null || (
+    Number.isInteger(duracao?.horas) && duracao.horas >= 0 && duracao.horas <= 23 &&
+    Number.isInteger(duracao?.minutos) && duracao.minutos >= 0 && duracao.minutos <= 59 &&
+    duracao.horas + duracao.minutos > 0
+  );
+}
+
+export function validarPublicacao(campos, duracao = null) {
+  const erros = {};
+  for (const [chave, rotulo] of [["titulo", "título"], ["descricao", "descrição"], ["endereco", "localização"]]) {
+    if (!campos[chave]?.trim()) erros[chave] = `Informe ${rotulo}.`;
+  }
+  if (!duracaoValida(duracao)) erros.duracao = "Escolha um tempo maior que zero ou limpe a duração.";
+  return erros;
+}
+
+export function prepararPublicacao(campos, respostas, duracao) {
+  const dados = Object.fromEntries(["titulo", "descricao", "endereco"].map((chave) => [chave, campos[chave].trim()]));
+  if (respostas) {
+    for (const chave of chavesRespostasTrilha) {
+      if (respostas[chave]) dados[chave] = respostas[chave];
+    }
+    dados.duracao = duracao;
+  }
+  return dados;
+}
+
+export function formatarDuracao(duracao) {
+  if (typeof duracao === "string") return duracao.trim();
+  if (!duracao || !duracaoValida(duracao)) return "";
+  return [duracao.horas ? `${duracao.horas}h` : "", duracao.minutos ? `${duracao.minutos}min` : ""].filter(Boolean).join(" ");
+}
+
+export function validarFotosPublicacao(arquivos) {
+  if (!Array.isArray(arquivos) || arquivos.length > 5) return "Selecione até cinco fotos por publicação.";
+  for (const arquivo of arquivos) {
+    if (!(arquivo instanceof Blob) || !["image/jpeg", "image/png", "image/webp"].includes(arquivo.type)) {
+      return "Use fotos JPEG, PNG ou WebP.";
+    }
+    if (!arquivo.size || arquivo.size > 5 * 1024 * 1024) return "Cada foto deve ter conteúdo e no máximo 5 MiB.";
+  }
+  return "";
+}
+
+// Permissões exclusivas das telas próprias; o backend continua sendo a autoridade.
+export function permissoesPublicacaoPropria(publicacao, usuario) {
+  const propria = typeof publicacao?.proprietario === "string" && publicacao.proprietario === usuario?._id;
+  return {
+    editar: propria && ["pending", "rejected", "approved"].includes(publicacao.status),
+    fotos: propria && ["pending", "rejected"].includes(publicacao.status),
+    reenviar: propria && publicacao.status === "rejected",
+    excluir: propria,
+  };
+}
+
+export function prepararEdicaoPublicacao(campos, respostas, duracao, original, somenteDetalhes = false) {
+  const dados = {};
+  if (!somenteDetalhes) {
+    for (const chave of ["titulo", "descricao", "endereco"]) {
+      if (campos[chave].trim() !== original[chave]) dados[chave] = campos[chave].trim();
+    }
+  }
+  for (const chave of chavesRespostasTrilha) {
+    const valor = respostas[chave] || null;
+    if (valor !== (original[chave] || null)) dados[chave] = valor;
+  }
+  if (JSON.stringify(duracao) !== JSON.stringify(original.duracao ?? null)) dados.duracao = duracao;
+  return dados;
+}

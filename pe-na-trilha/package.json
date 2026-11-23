@@ -4,10 +4,14 @@
   "version": "0.0.0",
   "type": "module",
   "scripts": {
-    "dev": "vite",
+    "dev:production": "vite --mode production",
+    "dev:homologation": "vite --mode homologation",
     "build": "vite build",
+    "build:homologation": "vite build --mode homologation",
     "lint": "eslint .",
-    "preview": "vite preview"
+    "test:auth": "node tests/authService.test.js && node tests/authValidation.test.js",
+    "preview": "vite preview",
+    "test": "node --test tests/*.test.js"
   },
   "dependencies": {
     "axios": "^1.17.0",
